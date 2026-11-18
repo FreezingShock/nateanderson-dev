@@ -12,7 +12,7 @@ const sfx = (n: SfxName, a?: unknown) => nfx(n, a, "automation");
 import { STATS, fmt, isUnlocked, fmtTime, statDef, type Derived, type State, type StatId } from "@/lib/nodefarm/engine";
 import {
     GROW_NAMES, PRISM_AIMS, RIGS, RIG_TUNE as T, buyRig, cacheCap, capCharge, capPay, capSecs, castMax, drawPay, glowFor, glowMul, growMul, growNext, growStage,
-    indexMul, indexed, mirrorMul, mirrored, pourSecs, prismMul, pulseSecs, rewrite, rewritePrice, rig, rigCap, rigDef, rigLv, rigPrice, scrubBurn, setRig,
+    eventRecords, indexMul, indexed, mirrorMul, mirrored, pourSecs, prismMul, pulseSecs, rewrite, rewritePrice, rig, rigCap, rigDef, rigLv, rigPrice, scrubBurn, setRig,
     siliconYield, stagesLit, ARC_LINKS, LINK_TUNE, arcLevel, arcOfZone, linkTier, stagingMul, stillFrac, stillMul, weather, wellMul, zoneNo,
     runningZones, spreadMul, knotsTied, knotMul, daylight, seedMax, seedMul, seedsFor, basaltYield, coolBurn, ventSecs, heatSecs, ringMul, convLevels, convMul, DESCENT_RIGS,
 } from "@/lib/nodefarm/zones/rigs";
@@ -89,7 +89,7 @@ function view(id: StatId, s: State, d: Derived): View {
             return { frac: Math.min(1, Math.log10(1 + r.well) / 8), meter: `mass ${fmt(r.well)}`, lines: [["Singularity output", x(m)]] };
         }
         case "engrams":
-            return { frac: Math.min(1, indexed(s) / 80), meter: `${indexed(s)} records filed`, lines: [["Engram output", x(indexMul(s))]] };
+            return { frac: Math.min(1, indexed(s) / 80), meter: `${indexed(s)} records filed`, lines: [["From zone events", `${eventRecords(s)} of ${T.indexWinMax}`], ["Engram output", x(indexMul(s))]] };
         case "paradox": {
             const z = mirrored(s);
             return { frac: (mirrorMul(s) - 1) / (T.mirrorMax - 1), meter: z ? `mirroring ${name(z)}` : "nothing to mirror", lines: [[z ? `${name(z)} output` : "Reflection", x(mirrorMul(s))]] };

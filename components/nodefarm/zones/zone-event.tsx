@@ -5,11 +5,11 @@ import "@/app/camino/nodefarm/zoneevents.css";
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
 import { cxPlay } from "@/lib/nodefarm/cx";
-import { ZE_TUNE, fmt, statDef, type State, type StatId, type ZoneEvActive } from "@/lib/nodefarm/engine";
+import { ZE_TUNE, fmt, overclockMult, overclockSecs, statDef, type State, type StatId, type ZoneEvActive } from "@/lib/nodefarm/engine";
 import { EVENT_TUNE, RARITY } from "@/lib/nodefarm/events";
 import { keyIsTyping } from "@/lib/nodefarm/keys";
 import { nfx } from "@/lib/nodefarm/sound";
-import { mineAmount, patchCost, rogueOffers, zeEffect, zeTitle, zoneEvDef, zoneLabel, type ZeChoice } from "@/lib/nodefarm/zones/zoneevents";
+import { mineAmount, patchCost, rogueOffers, zeEffect, zeTitle, zoneEvDef, zoneLabel, type ZeChoice, type ZeResult } from "@/lib/nodefarm/zones/zoneevents";
 import { NfIcon, type NfIconName } from "../board/icon";
 
 // the card's sounds play in the "events" mix
@@ -246,6 +246,73 @@ export function ZoneEventCard({ s, id, onChoose, onVault, onClose, reduced }: { 
                     {e.kind === "rogue" && <Rogue s={s} e={e} onPick={(i) => answer(`p${i}` as ZeChoice)} />}
                     {e.kind === "vault" && <Vault s={s} reduced={reduced} onCash={(rows) => { onVault(e.id, rows); onClose(); }} />}
                     <button type="button" className="nf-mini nf-zc-x" onClick={onClose}>{ask ? "Decide later" : "Dismiss"}</button>
+                </div>
+            </div>
+        </div>,
+        host,
+    );
+}
+
+/** What an answered event did, in plain lines (the result card and nothing else reads it). */
+export interface ZeOutcome { key: number; title: string; sub: string; color: string; tone: "good" | "warn"; lines: string[] }
+/** Build the result card. `ev` is the event as it was before the answer (an answer removes it); `rows` is the Cold storage cash-out. */
+export function zeOutcome(s: State, key: number, ev: { kind: ZoneEvActive["kind"]; zone: StatId; left: number }, c: ZeChoice | "vault", r: ZeResult, rows = 0): ZeOutcome {
+    const nm = statDef(ev.zone).name;
+    const def = zoneEvDef(ev.kind);
+    const lines: string[] = [];
+    let title = zeTitle(ev.kind, ev.zone);
+    let tone: "good" | "warn" = "good";
+    if (c === "mine") { title += ": mined"; lines.push(`+${fmt(r.paid ?? 0)} ${nm}, banked at once`); }
+    else if (c === "run") { title += ": left running"; lines.push(`${nm} output ×${ZE_TUNE.vein} for ${clock(ev.left)}`); }
+    else if (c === "patch") { title += ": patched"; lines.push(`Paid ${fmt(r.paid ?? 0)} Bytes`, `${nm} output back to normal`); }
+    else if (c === "wait") { title += ": waiting it out"; tone = "warn"; lines.push(`${nm} output ×${ZE_TUNE.fault} for ${clock(ev.left)}`, "No win. Nothing was spent."); }
+    else if (c === "vault") {
+        title += rows >= ZE_TUNE_ROWS ? ": fully decrypted" : ": cashed out";
+        if (!r.loot) { tone = "warn"; lines.push(`${rows} of ${EVENT_TUNE.vaultRows} rows is under the ${Math.round(EVENT_TUNE.winAt * 100)}% line`, "Nothing paid out."); }
+        else lines.push(`${rows} of ${EVENT_TUNE.vaultRows} rows opened`);
+    } else if (r.loot) title += `: ${ROGUE_NAMES[Number(c[1])] ?? "chosen"}`;
+    if (r.loot) lines.push(`${RARITY[r.loot.rarity].name} loot: ${r.loot.label}, ${r.loot.note}`);
+    const w = r.win;
+    if (w) {
+        lines.push(`Win: Overclock ×${fmt(overclockMult(s))} ${w.stacked ? `extended to ${Math.round(s.overclock)} s` : `for ${Math.round(overclockSecs(s))} s`}`);
+        if (w.zero) lines.push(`Zero-day: ${fmt(w.zero.bytes ?? 0)} Bytes and 10 min of every material`);
+        if (w.paid) lines.push(`Patient: ${fmt(w.paid.bytes ?? 0)} Bytes and 5 min of every material`);
+        if (w.intel >= 1) lines.push(`+${fmt(w.intel)} intel`);
+        if (w.frenzy) lines.push("Swarm alarm: Drones ×4 speed for 60 s");
+        if (w.echo) lines.push("Echo: another event is coming soon");
+    }
+    return { key, title, sub: zoneLabel(ev.zone), color: def.color, tone, lines };
+}
+const ZE_TUNE_ROWS = EVENT_TUNE.vaultRows;
+
+const RESULT_MS = 6500;
+/** The card shown right after you answer an event: what you chose and what it paid. It closes itself. */
+export function ZoneEventResult({ o, onClose }: { o: ZeOutcome | null; onClose: () => void }) {
+    const [host, setHost] = useState<Element | null>(null);
+    const card = useRef<HTMLDivElement>(null);
+    useEffect(() => {
+        const pick = () => { const fs = document.fullscreenElement; setHost(fs && fs !== document.documentElement ? fs : document.body); };
+        pick();
+        document.addEventListener("fullscreenchange", pick);
+        return () => document.removeEventListener("fullscreenchange", pick);
+    }, []);
+    const key = o?.key;
+    useEffect(() => {
+        if (key == null) return;
+        cxPlay(card.current, { style: "decrypt", bare: true, sound: false, rows: ":scope > :not(.nf-zc-br)" });
+        const t = setTimeout(onClose, RESULT_MS);
+        return () => clearTimeout(t);
+    }, [key, onClose]);
+    if (!host || !o) return null;
+    return createPortal(
+        <div className="ctos nf-ev-host">
+            <div className="nf-zc-wrap">
+                <div ref={card} className="nf-zc nf-zr" role="status" data-tone={o.tone} style={{ ["--k" as string]: o.tone === "warn" ? "#ffb02e" : o.color } as CSSProperties}>
+                    {(["tl", "tr", "bl", "br"] as const).map((c) => <i key={c} className="nf-zc-br" data-c={c} aria-hidden="true" />)}
+                    <div className="nf-zc-top"><b>EVENT RESULT</b><span>{o.sub}</span></div>
+                    <h3 className="nf-zc-name">{o.title}</h3>
+                    <ul className="nf-zr-l">{o.lines.map((l, i) => <li key={i}>{l}</li>)}</ul>
+                    <button type="button" className="nf-mini nf-zc-x" onClick={onClose}>Dismiss</button>
                 </div>
             </div>
         </div>,

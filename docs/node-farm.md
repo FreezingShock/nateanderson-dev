@@ -323,7 +323,7 @@ Every zone keeps its six buttons and has one rig: a meter, one rule, and a level
   speeds Copper to Quartz next run), 08 Carvings (three glyph tracks: Aether, Runes, Quartz), 09 Prism beam (aim at Bytes or
   Copper to Runes), 10 Void draw (0/10/25% of Starglass into Voidsteel), 11 Stillness (Chrono up to x2 the longer you press
   nothing yourself; `rigManual` in doPress resets it), 12 Weather (12 min clock: clear, front x0.67, storm x1.5), 13 Beacon
-  (free Overclock every 40 pulses), 14 Gravity well (material presses add mass, log boost), 15 Index (goals, secrets, logs),
+  (free Overclock every 40 pulses), 14 Gravity well (material presses add mass, log boost), 15 Index (goals, secrets, logs, and every third zone event you win, up to 15; `eventRecords`),
   16 Mirror (boosts the running material with the fewest producers), 17 Rewrite (raises other rigs' caps).
 - Boosts touch only their own zone or a named neighbour, and the big ones are log-scaled or capped. Never add a power-law boost
   on everything.
@@ -342,11 +342,13 @@ Every zone keeps its six buttons and has one rig: a meter, one rule, and a level
 About every 11 to 19 minutes of play (first one after 8 minutes of life), one unlocked zone gets a short event. Rules and the roll are in `lib/nodefarm/zones/zoneevents.ts`; every number is `ZE_TUNE` in `engine.ts` (the engine reads it in `derive` and `button` through `zeOut` and `zeCost`, and the rigs through `zeTuned`). State is `s.ze` (optional, so old saves load): the running event, a timer, counts and a log of the last twelve. Ascend ends a running event.
 
 - **Surge**: the zone's output x1.4 for 2.5 min. **Clearance**: its buttons cost 25% less (not on Bytes, which has none). **Resonance**: the zone and the one below it x1.3. **Rich vein** (Bytes and materials): output x1.4 for 3.5 min, or Mine it now for 2.5 min of output at once. **Fault** (after 15 min of life): output x0.6; Patch it for 25 s of Bytes or wait it out.
+- **Cron window** (2026-11-17): buy.sh runs that zone's rule 3 times as often for 2.5 min (`ZE_TUNE.cron`; extra runs are made by `cronStep` in scripts.ts and count as script presses). Only offered when buy.sh is learned, running and ticked for that zone. **Alloy**: a material zone fuses with the stock one zone below it, so its output is x(1 + 0.1 per tenfold of that stock), capped at x1.5 (`zeAlloy` in engine.ts, read through `zeOut`); only offered where the zone below holds stock (not Copper). Both have a name in each arc's voice.
 - **Drone convoy**: the Drones posted to the zone press it 2.5 times as often; only offered when such Drones exist. **Rig tune**: that zone's rig bonus counts twice (`muls()` in rigs.ts); only offered where the rig has a bonus to double.
 - Nothing takes stock from you and nothing needs a reflex. Output means Bytes per second for Bytes, button strength for Multipliers, Reboot strength for Reboots, and the rate for a material.
 - Each arc names the events in its own voice (`ARC_TITLES`); zones outside the five arcs use the plain names. The log shows in Records, under "Zone events".
 - Only online ticks (5 s or less) start an event or run a convoy; time away just runs the clock down. `sim.mjs` does not import `zoneevents.ts`; to measure events, import it first (`import "lib/nodefarm/zones/zoneevents.ts"` in a wrapper).
 - Shown as a centered card (`ZoneEventCard`, no scrim, plain events close after 7 s, a vein or fault waits for an answer or "Decide later"), a readout on the zone panel (`ZoneEvent`) and a dot on the signal chain. Reveal is decrypt.
+- Result card (2026-11-17): answering an event (Mine, Let it run, Patch, Wait, a Rogue offer, a Cold storage cash-out) opens a short card with what you chose, what it paid, the loot and the win bonuses (`zeOutcome` and `ZoneEventResult` in zone-event.tsx; shown 6.5 s, not saved). The feed lines name the loot too.
 - Admin panel, Run section: zone picker, one button per event, Clear, and Next in 5 s.
 - Rig machines (2026-11-12, round 2): each rig has a 96 x 64 dither machine, 4 states (empty, started, past half, full) x 6
   frames, drawn by `scripts/naos-art/nodefarm-rigs.py` (kit `nodefarm_rig_kit.py`) into `public/naos/nodefarm/rigs.webp`. Row

@@ -12,9 +12,9 @@
 // Drones are the fast, blind hands; scripts are the slow rules about when, which and how much to keep.
 // Rules are pure (no React). The board zone is components/nodefarm/workshop/scripts.tsx. See docs/node-farm.md "Scripts".
 import {
-    MATS, STATS, TICK_HOOKS, TIERS, amount, apOnAscend, button, compile, compileBlock, deploy, deployBlock, dropFill, hasFeature, hasRecipe, isRunning,
+    MATS, STATS, TICK_HOOKS, TIERS, ZE_TUNE, amount, apOnAscend, button, compile, compileBlock, deploy, deployBlock, dropFill, hasFeature, hasRecipe, isRunning,
     isUnlocked, labOpen, labSlots, openDrop, payload, press, PAYLOADS, PERKS, TREE, buyNode, buyPerk, handSeen, nodeLevel,
-    type AutoState, type ButtonStat, type PayloadId, type ScriptId, type State, type StatId,
+    type AutoState, type ButtonStat, type PayloadId, type ScriptId, type State, type StatId, type ZoneEvActive,
 } from "../engine";
 import { RIGS, buyRig, capCharge, rig, rigOpen, rigPrice } from "../zones/rigs";
 import { zeChoose } from "../zones/zoneevents";
@@ -213,19 +213,23 @@ export function taughtMask(s: State, stat: string): number {
 export const buyVer = (s: State) => { const n = s.auto?.ran.buy ?? 0; let v = 0; SCRIPT_TUNE.buyVer.forEach((at, i) => { if (n >= at) v = i; }); return v; };
 export const buyCycle = (s: State) => SCRIPT_TUNE.buyCycle[buyVer(s)];
 /** One buy.sh run: on each ticked stat, press the highest allowed tier it can afford while keeping the reserve. */
+/** One buy.sh press on one stat (the highest allowed tier it can afford while keeping its reserve). */
+function buyStat(s: State, st: ButtonStat): boolean {
+    const a = s.auto!;
+    const mask = (a.buy[st] ?? 0) & taughtMask(s, st);
+    if (!mask || !isUnlocked(s, st)) return false;
+    for (let k = TIERS - 1; k >= 0; k--) {
+        if (!(mask & (1 << k))) continue;
+        const b = button(s, st, k);
+        if (amount(s, b.pays) < b.cost * a.keep) continue;
+        if (press(s, st, k)) return true;
+    }
+    return false;
+}
 export function runBuy(s: State): number {
     const a = s.auto!;
     let n = 0;
-    for (const st of BUY_STATS) {
-        const mask = (a.buy[st] ?? 0) & taughtMask(s, st);
-        if (!mask || !isUnlocked(s, st)) continue;
-        for (let k = TIERS - 1; k >= 0; k--) {
-            if (!(mask & (1 << k))) continue;
-            const b = button(s, st, k);
-            if (amount(s, b.pays) < b.cost * a.keep) continue;
-            if (press(s, st, k)) { n++; break; }
-        }
-    }
+    for (const st of BUY_STATS) if (buyStat(s, st)) n++;
     a.presses += n;
     a.ran.buy = (a.ran.buy ?? 0) + n;
     return n;
@@ -475,6 +479,18 @@ function standingOrders(s: State, a: AutoState) {
     }
 }
 
+/** Cron window: extra buy.sh runs on the event's zone, at (ZE_TUNE.cron - 1) times its normal pace. They count as script presses, and `e.acc[0]` keeps the fraction. */
+function cronStep(s: State, a: AutoState, e: ZoneEvActive, dt: number) {
+    const acc = (e.acc ??= Array(TIERS).fill(0));
+    acc[0] = Math.min(acc[0] + (dt / buyCycle(s)) * (ZE_TUNE.cron - 1), 12);
+    const n = Math.floor(acc[0]);
+    if (n < 1) return;
+    acc[0] -= n;
+    let did = 0;
+    for (let i = 0; i < n; i++) if (buyStat(s, e.zone as ButtonStat)) did++;
+    if (did) { a.presses += did; a.ran.buy = (a.ran.buy ?? 0) + did; e.got = (e.got ?? 0) + did; }
+}
+
 export function scriptStep(s: State, dt: number) {
     if (s.armedToBuy) migrateArmed(s);
     const a = s.auto;
@@ -492,7 +508,11 @@ export function scriptStep(s: State, dt: number) {
     if (a.on.rig && a.own.includes("rig")) every(a, "rig", dt, SCRIPT_TUNE.cycle.rig, () => runRig(s));
     if (a.on.event && a.own.includes("event")) every(a, "event", dt, SCRIPT_TUNE.cycle.event, () => runEvent(s));
     if (a.on.restore && a.own.includes("restore")) every(a, "restore", dt, SCRIPT_TUNE.cycle.restore, () => runRestore(s));
-    if (a.on.buy && a.own.includes("buy")) every(a, "buy", dt, buyCycle(s), () => runBuy(s));
+    if (a.on.buy && a.own.includes("buy")) {
+        every(a, "buy", dt, buyCycle(s), () => runBuy(s));
+        // zone event, Cron window: buy.sh runs that zone's rule several times as often (online ticks only, same as a convoy)
+        if (dt <= 5) for (const e of s.ze?.act ?? []) if (e.kind === "cron" && e.left > 0) cronStep(s, a, e, dt);
+    }
     if (a.on.compile && a.own.includes("compile") && labOpen(s)) every(a, "compile", dt, SCRIPT_TUNE.cycle.compile, () => runCompile(s));
     if (a.on.deploy && a.own.includes("deploy") && labOpen(s)) every(a, "deploy", dt, SCRIPT_TUNE.cycle.deploy, () => runDeploy(s));
     if (a.on.drop && a.own.includes("drop")) every(a, "drop", dt, SCRIPT_TUNE.cycle.drop, () => { if (dropFill(s) >= 1 && openDrop(s)) a.ran.drop = (a.ran.drop ?? 0) + 1; });

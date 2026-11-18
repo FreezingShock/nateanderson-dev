@@ -67,7 +67,7 @@ import { isAdmin, setAdmin } from "@/lib/nodefarm/systems/admin";
 import { adminFlags, buyDroneNode, buyMod, droneNode, masteryRanks, MODS, respecDrones, setPost } from "@/lib/nodefarm/engine";
 import { DRONE_NAMES } from "@/lib/nodefarm/content/guide";
 import { codeReveal, cxClear } from "@/lib/nodefarm/cx";
-import { ZoneEventCard } from "./zones/zone-event";
+import { ZoneEventCard, ZoneEventResult, zeOutcome, type ZeOutcome } from "./zones/zone-event";
 import { zeChoose, zeVault, zoneEvDef, zoneLabel, type ZeChoice, type ZeResult } from "@/lib/nodefarm/zones/zoneevents";
 import { ARCS, arcKey, arcOf } from "@/lib/nodefarm/zones/arcs";
 import { ArcHead } from "./zones/arcs";
@@ -132,6 +132,8 @@ export function NodeFarm() {
     /** zone events: the one announced by the centered card, and the last event id this screen has seen (for the feed) */
     const [zeCard, setZeCard] = useState<number | null>(null);
     const closeZeCard = useCallback(() => setZeCard(null), []);
+    const [zeRes, setZeRes] = useState<ZeOutcome | null>(null);
+    const closeZeRes = useCallback(() => setZeRes(null), []);
     const zeSeen = useRef<{ s: State | null; n: number }>({ s: null, n: 0 });
     const labPrev = useRef<{ s: State | null; seen: boolean; compiled: number }>({ s: null, seen: false, compiled: 0 });
     // stable on purpose: the tree's modal effect re-runs whenever this changes, and this component re-renders ten times a second
@@ -742,13 +744,16 @@ export function NodeFarm() {
     );
     const onZoneEv = useCallback(
         (id: number, c: ZeChoice) => {
+            const ev0 = g.current.ze?.act.find((x) => x.id === id);
+            const before = ev0 ? { kind: ev0.kind, zone: ev0.zone, left: ev0.left } : null;
             const r = zeChoose(g.current, id, c);
             if (!r.ok) { sfx("deny"); return; }
+            if (before) setZeRes(zeOutcome(g.current, Date.now(), before, c, r));
             teachEvent(g.current);
             nfx("nfBuy", { tier: 2 }, "events");
             if (c === "mine") log(`Vein mined: +${fmt(r.paid ?? 0)} ${statDef(r.stat ?? "bytes").name}.`, "good");
             else if (c === "patch") log(`Fault patched for ${fmt(r.paid ?? 0)} Bytes.`, "good");
-            else if (r.loot) log(`Rogue process dealt with.`, "good");
+            else if (r.loot) log(`Rogue process dealt with: ${r.loot.label}.`, "good");
             else log(c === "run" ? "Vein left running." : "Fault left to run out.", "good");
             evWin(r);
             save();
@@ -758,8 +763,11 @@ export function NodeFarm() {
     );
     const onVault = useCallback(
         (id: number, rows: number) => {
+            const ev0 = g.current.ze?.act.find((x) => x.id === id);
+            const before = ev0 ? { kind: ev0.kind, zone: ev0.zone, left: ev0.left } : null;
             const r = zeVault(g.current, id, rows);
             if (!r.ok) return;
+            if (before) setZeRes(zeOutcome(g.current, Date.now(), before, "vault", r, rows));
             teachEvent(g.current);
             nfx("nfBuy", { tier: 2 }, "events");
             log(r.win ? `Cold storage cashed out: ${rows} rows.` : "Cold storage closed with nothing opened.", r.win ? "good" : "warn");
@@ -1345,6 +1353,7 @@ export function NodeFarm() {
             {toast && <div className="nf-toast" role="status"><NfIcon name="spark" /> Goal: {toast}</div>}
 
             <ZoneEventCard s={s} id={zeCard} onChoose={onZoneEv} onVault={onVault} onClose={closeZeCard} reduced={reduced} />
+            <ZoneEventResult o={zeRes} onClose={closeZeRes} />
             <Juice reduced={reduced} />
             {d && <PokeLayer s={s} d={d} root={root} coreFeed={feed} feed={feedStore} reduced={reduced} onChange={() => { save(); bump((n) => n + 1); }} onGo={goTo} onArm={(z) => { toggleBuyStat(s, z); sfx("tab"); log(`buy.sh ${s.auto?.buy[z] ? "now buys" : "stopped on"} ${statDef(z).name}.`, "good"); save(); bump((n) => n + 1); }} />}
 

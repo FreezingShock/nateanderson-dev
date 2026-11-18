@@ -163,3 +163,67 @@ test("a played game passes through every system without the engine throwing (zon
     play(s, 1800, { ascend: true, each: (st, t) => { if (t % 120 === 0) { const ev = ZE.rollEvent(st); if (ev) ZE.zeStart(st, ev.kind, ev.zone); } } });
     assert.deepEqual(problems(s), []);
 });
+
+test("Alloy: only on a material zone whose lower neighbour holds stock, and it scales with that stock (capped)", () => {
+    const s = maxed();
+    s.silicon = 5;
+    assert.equal(ZE.kindsFor(s, "quartz").includes("alloy"), true, "quartz has Silicon below once stocked");
+    s.silicon = 0;
+    assert.equal(ZE.kindsFor(s, "quartz").includes("alloy"), false, "no Silicon stock, no Alloy");
+    assert.equal(ZE.kindsFor(s, "copper").includes("alloy"), false, "Copper has no material below");
+    assert.equal(ZE.kindsFor(s, "bytes").includes("alloy"), false);
+    s.silicon = 1e3;
+    const lo = E.zeAlloy(s, "quartz");
+    s.silicon = 1e9;
+    const hi = E.zeAlloy(s, "quartz");
+    assert.ok(lo > 1 && hi > lo, `Alloy grows with stock (${lo} then ${hi})`);
+    s.silicon = 1e300;
+    assert.ok(E.zeAlloy(s, "quartz") <= E.ZE_TUNE.alloyMax + 1e-9, "capped");
+    s.silicon = 1e6;
+    const before = E.zeOut(s, "quartz");
+    ZE.zeStart(s, "alloy", "quartz");
+    assert.ok(E.zeOut(s, "quartz") > before, "a running Alloy lifts that zone's output");
+    assert.equal(E.zeOut(s, "silicon"), 1, "and only that zone");
+});
+
+test("Cron window: needs buy.sh set on the zone, and adds extra script presses while it runs", () => {
+    const s = maxed();
+    s.auto.own = [...new Set([...s.auto.own, "buy"])];
+    s.auto.on.buy = true;
+    s.auto.buy.copper = 0;
+    assert.equal(ZE.kindsFor(s, "copper").includes("cron"), false, "buy.sh not ticked for Copper");
+    s.auto.buy.copper = 63;
+    assert.equal(ZE.kindsFor(s, "copper").includes("cron"), true);
+    s.auto.on.buy = false;
+    assert.equal(ZE.kindsFor(s, "copper").includes("cron"), false, "buy.sh stopped");
+    s.auto.on.buy = true;
+    s.copper = 1e60;
+    s.ze = { act: [], wait: 1e9, seen: 0, kinds: {} };
+    const e = ZE.zeStart(s, "cron", "copper");
+    for (let i = 0; i < 20; i++) E.tick(s, 0.5);
+    assert.ok((e.got ?? 0) > 0, "the window made extra presses");
+    assert.deepEqual(problems(s), []);
+});
+
+test("Index files every third zone event won, up to the cap", () => {
+    const s = maxed();
+    s.life.intrusions = 0;
+    const base = RG.indexed(s);
+    s.life.intrusions = 9;
+    assert.equal(RG.indexed(s) - base, 3);
+    s.life.intrusions = 10000;
+    assert.equal(RG.indexed(s) - base, RG.RIG_TUNE.indexWinMax);
+});
+
+test("a saved game with the new event kinds round-trips; an unknown kind is still dropped", () => {
+    const s = maxed();
+    s.silicon = 1e6;
+    s.ze = { act: [], wait: 100, seen: 0, kinds: {} };
+    ZE.zeStart(s, "alloy", "quartz");
+    ZE.zeStart(s, "cron", "copper");
+    const back = E.parseSave(E.exportSave(s));
+    assert.deepEqual(back.ze.act.map((e) => e.kind).sort(), ["alloy", "cron"]);
+    const bad = JSON.parse(JSON.stringify(back));
+    bad.ze.act.push({ id: 99, kind: "nope", zone: "copper", left: 10 });
+    assert.deepEqual(E.parseSave(JSON.stringify(bad)).ze.act.map((e) => e.kind).sort(), ["alloy", "cron"]);
+});

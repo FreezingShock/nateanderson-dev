@@ -34,3 +34,9 @@
 .ctos .nf-zc-x { justify-self: start; color: var(--cm-ctos-meta); }
 @keyframes nfZcIn { from { transform: translateY(10px); opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .ctos .nf-zc { animation: none; } }
+
+/* result card after answering an event: the same frame as the announcement, with the outcome as a short list */
+.ctos .nf-zr-l { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; font: 500 14px/1.4 var(--cm-mono); color: var(--cm-mute); }
+.ctos .nf-zr-l li { position: relative; padding-left: 16px; }
+.ctos .nf-zr-l li::before { content: ">"; position: absolute; left: 0; color: var(--k); font-weight: 700; }
+.ctos .nf-zr-l li:first-child { color: #fff; }

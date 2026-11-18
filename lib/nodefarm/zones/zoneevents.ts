@@ -4,7 +4,7 @@
 // live in ZE_TUNE (engine.ts, because the engine reads them), the strip on the zone panel is components/nodefarm/zones/zone-event.tsx.
 import {
     addLifeBytes,
-    MATS, STATS, TICK_HOOKS, TIERS, ZE_TUNE, breach, chOff, derive, droneEventPace, eventHaste, droneRate, isUnlocked, overclockMult, postOf, press, resonancePair, statDef, zeOut, fwFieldOp, fwZeGap, fwZeLong,
+    MATS, STATS, TICK_HOOKS, TIERS, ZE_TUNE, breach, chOff, derive, droneEventPace, eventHaste, droneRate, isUnlocked, overclockMult, postOf, press, resonancePair, statDef, zeAlloy, zeOut, fwFieldOp, fwZeGap, fwZeLong,
     type ButtonStat, type MatId, type State, type StatId, type ZoneEvActive, type ZoneEvKind, type ZoneEvState,
 } from "../engine";
 import { LORE } from "../content/lore";
@@ -31,18 +31,21 @@ export const ZONE_EVENTS: ZoneEvDef[] = [
     { kind: "tune", code: "RIG TUNE", title: "Rig tune", color: "#6bffc9", good: true },
     { kind: "rogue", code: "ROGUE PROCESS", title: "Rogue process", color: "#b46bff", good: true },
     { kind: "vault", code: "COLD STORAGE", title: "Cold storage", color: "#5be37d", good: true },
+    { kind: "cron", code: "CRON WINDOW", title: "Cron window", color: "#ffd84a", good: true },
+    { kind: "alloy", code: "ALLOY", title: "Alloy", color: "#ff8f5a", good: true },
 ];
+const fmtMul = (v: number) => (Math.round(v * 100) / 100).toString();
 export const zoneEvDef = (k: ZoneEvKind) => ZONE_EVENTS.find((e) => e.kind === k)!;
 
 /** Each arc names the same events in its own voice (the rules do not change). Zones past these arcs use the plain titles above. */
 const ARC_TITLES: Record<string, Record<ZoneEvKind, string>> = {
-    rack: { surge: "Packet storm", clearance: "Surplus stock", resonance: "Feedback loop", vein: "Open channel", fault: "Short circuit", convoy: "Courier run", tune: "Overclocked rig", rogue: "Stray process", vault: "Cold cache" },
-    fab: { surge: "Clean run", clearance: "Bulk order", resonance: "Matched wafers", vein: "Crystal seam", fault: "Dust leak", convoy: "Cart run", tune: "Calibrated line", rogue: "Rogue tool", vault: "Sealed crate" },
-    hollow: { surge: "Glyph flare", clearance: "Open vault", resonance: "Echoing halls", vein: "Buried seam", fault: "Stuck hour", convoy: "Torchbearers", tune: "Aligned carvings", rogue: "Wandering glyph", vault: "Sealed vault" },
-    deep: { surge: "Solar wind", clearance: "Salvage drift", resonance: "Gravity lens", vein: "Dense cloud", fault: "Debris field", convoy: "Probe fleet", tune: "Dish alignment", rogue: "Stray probe", vault: "Drifting vault" },
-    overgrowth: { surge: "Spore burst", clearance: "Seed swap", resonance: "Cross-pollination", vein: "Rich loam", fault: "Blight", convoy: "Gardeners' round", tune: "Grafted rig", rogue: "Wild process", vault: "Seed vault" },
-    descent: { surge: "Magma surge", clearance: "Rockfall sale", resonance: "Deep echo", vein: "Geode pocket", fault: "Cave-in", convoy: "Mining crew", tune: "Tempered rig", rogue: "Loose crawler", vault: "Sunk vault" },
-    origin: { surge: "Memory flood", clearance: "Old prices", resonance: "Reflection", vein: "Buried archive", fault: "Stale index", convoy: "Recall", tune: "Rewritten rig", rogue: "Echo of an operator", vault: "Cold archive" },
+    rack: { surge: "Packet storm", clearance: "Surplus stock", resonance: "Feedback loop", vein: "Open channel", fault: "Short circuit", convoy: "Courier run", tune: "Overclocked rig", rogue: "Stray process", vault: "Cold cache", cron: "Scheduler spike", alloy: "Stacked bench" },
+    fab: { surge: "Clean run", clearance: "Bulk order", resonance: "Matched wafers", vein: "Crystal seam", fault: "Dust leak", convoy: "Cart run", tune: "Calibrated line", rogue: "Rogue tool", vault: "Sealed crate", cron: "Night shift", alloy: "Alloy lot" },
+    hollow: { surge: "Glyph flare", clearance: "Open vault", resonance: "Echoing halls", vein: "Buried seam", fault: "Stuck hour", convoy: "Torchbearers", tune: "Aligned carvings", rogue: "Wandering glyph", vault: "Sealed vault", cron: "Scribe's hour", alloy: "Forged glyphs" },
+    deep: { surge: "Solar wind", clearance: "Salvage drift", resonance: "Gravity lens", vein: "Dense cloud", fault: "Debris field", convoy: "Probe fleet", tune: "Dish alignment", rogue: "Stray probe", vault: "Drifting vault", cron: "Autopilot window", alloy: "Slag fusion" },
+    overgrowth: { surge: "Spore burst", clearance: "Seed swap", resonance: "Cross-pollination", vein: "Rich loam", fault: "Blight", convoy: "Gardeners' round", tune: "Grafted rig", rogue: "Wild process", vault: "Seed vault", cron: "Gardener's timer", alloy: "Graft" },
+    descent: { surge: "Magma surge", clearance: "Rockfall sale", resonance: "Deep echo", vein: "Geode pocket", fault: "Cave-in", convoy: "Mining crew", tune: "Tempered rig", rogue: "Loose crawler", vault: "Sunk vault", cron: "Shift bell", alloy: "Smelt" },
+    origin: { surge: "Memory flood", clearance: "Old prices", resonance: "Reflection", vein: "Buried archive", fault: "Stale index", convoy: "Recall", tune: "Rewritten rig", rogue: "Echo of an operator", vault: "Cold archive", cron: "Scheduled recall", alloy: "Merged archive" },
 };
 /** The name shown on the card and the log: the arc's own, or the plain one. */
 export const zeTitle = (kind: ZoneEvKind, zone: StatId) => ARC_TITLES[arcOf(zone)?.id ?? ""]?.[kind] ?? zoneEvDef(kind).title;
@@ -69,6 +72,12 @@ export function kindsFor(s: State, zone: StatId): ZoneEvKind[] {
     if (zone !== "bytes" && zone !== "reboot" && s.drones.some((n, k) => n > 0 && postOf(s, k) === zone)) out.push("convoy");
     // Rig tune needs a rig bonus on that zone to double
     if ((muls(s)[zone] ?? 1) > 1) out.push("tune");
+    // Cron window needs buy.sh learned, running, and set to buy on this zone
+    const au = s.auto;
+    if (hasButtons(zone) && au && au.own.includes("buy") && au.on.buy && (au.buy[zone] ?? 0) > 0) out.push("cron");
+    // Alloy fuses a material zone with the stock of the one below it, so that one must hold some (Copper has no material below)
+    const mi = (MATS as readonly string[]).indexOf(zone);
+    if (mi > 0 && (s[MATS[mi - 1]] as number) > 0) out.push("alloy");
     // Rogue process and Cold storage (the old card events) wait until the first minutes are over
     if (s.mult + s.reboot >= QTE_FROM) out.push("rogue", "vault");
     return out;
@@ -188,7 +197,7 @@ function convoyStep(s: State, e: ZoneEvActive, dt: number) {
         const n = Math.floor(acc[k]);
         if (n < 1) continue;
         acc[k] -= n;
-        for (let i = 0; i < n; i++) if (!press(s, e.zone as ButtonStat, k)) break;
+        for (let i = 0; i < n; i++) { if (!press(s, e.zone as ButtonStat, k)) break; e.got = (e.got ?? 0) + 1; }
     }
 }
 
@@ -226,6 +235,8 @@ export function zeEffect(s: State, e: ZoneEvActive): string {
         case "convoy": return `Drones press ${nm} ×${ZE_TUNE.convoy} as often`;
         case "rogue": return `Something unknown is squatting on ${nm}. Choose what to do with it`;
         case "vault": return `An old vault answered the ping on ${nm}. Hold to decrypt it and keep every row you open`;
+        case "cron": return `buy.sh runs the ${nm} rule ×${ZE_TUNE.cron} as often`;
+        case "alloy": return `${nm} output ×${fmtMul(zeAlloy(s, e.zone))}, fused with ${statDef(resonancePair(e.zone)).name} stock`;
         case "tune": return `${RIGS.find((r) => r.zone === e.zone)?.name ?? "Rig"} bonus counts ×${ZE_TUNE.tune}`;
     }
 }

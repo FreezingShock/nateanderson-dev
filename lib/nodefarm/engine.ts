@@ -829,7 +829,7 @@ export const CH_HOOKS: {
 } = {};
 export const chOff = (s: State, what: ChOff) => !!CH_HOOKS.off?.(s, what);
 // ---- Zone events: the numbers and the two reads the rest of the engine needs (spawning and choices live in lib/nodefarm/zones/zoneevents.ts)
-export type ZoneEvKind = "surge" | "clearance" | "resonance" | "vein" | "fault" | "convoy" | "tune" | "rogue" | "vault";
+export type ZoneEvKind = "surge" | "clearance" | "resonance" | "vein" | "fault" | "convoy" | "tune" | "rogue" | "vault" | "cron" | "alloy";
 export interface ZoneEvActive {
     /** a running number, so the screen can tell a new event from the one it already showed */
     id: number;
@@ -840,8 +840,10 @@ export interface ZoneEvActive {
     total: number;
     /** vein and fault: you have answered the choice (Let it run, Wait it out), so the buttons go away. Mining and patching end the event instead. */
     picked?: boolean;
-    /** convoy: fractional extra Drone presses waiting to fire, per tier */
+    /** convoy: fractional extra Drone presses waiting to fire, per tier (cron: slot 0 is buy.sh's) */
     acc?: number[];
+    /** cron and convoy: extra presses made so far, for the result card (not saved) */
+    got?: number;
     /** rogue: the rarity (0 to 5) all three offers were rolled at, so the card can rebuild them */
     rar?: number;
 }
@@ -864,9 +866,9 @@ export const ZE_TUNE = {
     gap: [660, 1140] as [number, number],
     first: 480,
     /** how long each lasts, seconds */
-    secs: { surge: 150, clearance: 150, resonance: 150, vein: 210, fault: 150, convoy: 150, tune: 150, rogue: 120, vault: 120 } as Record<ZoneEvKind, number>,
+    secs: { surge: 150, clearance: 150, resonance: 150, vein: 210, fault: 150, convoy: 150, tune: 150, rogue: 120, vault: 120, cron: 150, alloy: 150 } as Record<ZoneEvKind, number>,
     /** relative odds of each kind */
-    odds: { surge: 3, clearance: 2, resonance: 2, vein: 2, fault: 1, convoy: 1.5, tune: 1.5, rogue: 1.5, vault: 1.5 } as Record<ZoneEvKind, number>,
+    odds: { surge: 3, clearance: 2, resonance: 2, vein: 2, fault: 1, convoy: 1.5, tune: 1.5, rogue: 1.5, vault: 1.5, cron: 1.2, alloy: 1.2 } as Record<ZoneEvKind, number>,
     /** output multipliers (trimmed after the balance audit: the first numbers cut a Drone-bot Origin run from about 38 h to 26 to 32 h) */
     surge: 1.4,
     resonance: 1.3,
@@ -884,11 +886,22 @@ export const ZE_TUNE = {
     convoy: 2.5,
     /** Rig tune: the zone rig's bonus counts this many times over */
     tune: 2,
+    /** Cron window: buy.sh runs this many times as often on that zone */
+    cron: 3,
+    /** Alloy: output gains this much per tenfold of the stock one zone below (log), capped at alloyMax */
+    alloy: 0.1,
+    alloyMax: 1.5,
     /** events kept in the log */
     logMax: 12,
 };
 /** The zone a Resonance also lifts: the one below it in the chain (Bytes pairs with Multipliers). */
 export const resonancePair = (zone: StatId): StatId => { const i = STATS.findIndex((x) => x.id === zone); return STATS[i > 0 ? i - 1 : 1].id; };
+/** Alloy: the zone fuses with the stock one zone below it, so output grows with the log of that stock (1 when the zone below holds nothing). */
+export function zeAlloy(s: State, zone: StatId): number {
+    const below = resonancePair(zone);
+    const have = (MATS as readonly string[]).includes(below) ? (s[below as MatId] as number) : 0;
+    return Math.min(ZE_TUNE.alloyMax, 1 + ZE_TUNE.alloy * Math.log10(1 + Math.max(0, have)));
+}
 /** Output multiplier an event puts on a zone (1 when none). Bytes: Bytes per second. Multipliers: button strength. Reboots: Reboot strength. Materials: their rate. */
 export function zeOut(s: State, id: StatId): number {
     const a = s.ze?.act;
@@ -899,6 +912,7 @@ export function zeOut(s: State, id: StatId): number {
         if (e.kind === "surge" && e.zone === id) x *= fwFieldOp(s) ? 1 + (ZE_TUNE.surge - 1) * 2 : ZE_TUNE.surge;
         else if (e.kind === "vein" && e.zone === id) x *= ZE_TUNE.vein;
         else if (e.kind === "fault" && e.zone === id) x *= ZE_TUNE.fault;
+        else if (e.kind === "alloy" && e.zone === id) x *= zeAlloy(s, id);
         else if (e.kind === "resonance" && (e.zone === id || resonancePair(e.zone) === id)) x *= ZE_TUNE.resonance;
     }
     return x;

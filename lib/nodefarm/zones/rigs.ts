@@ -48,7 +48,7 @@ export const RIG_TUNE = {
     // 14 Gravity well
     well: 0.025, wellLv: 0.008,
     // 15 Index
-    index: 0.005, indexLv: 0.002,
+    index: 0.005, indexLv: 0.002, indexWinEvery: 3, indexWinMax: 15,
     // 16 Mirror
     mirror: 0.1, mirrorLv: 0.025, mirrorMax: 4,
     // 18 Spread: per material zone running this run
@@ -100,7 +100,7 @@ export const RIGS: RigDef[] = [
     R("nebula", "Weather", "cycle", "Clear skies, a front, then a storm, on a 12 minute clock. Storms add half again to Nebula; fronts thin it.", "storms last 36 s longer"),
     R("pulsars", "Beacon", "link", "The spire pulses on a steady clock. Every 40 pulses fires a free Overclock.", "pulses 6% faster"),
     R("singularity", "Gravity well", "link", "Every material button pressed this run, by anyone, drops mass into the well. Mass strengthens Singularity.", "+0.8% per tenfold mass"),
-    R("engrams", "Index", "collection", "Every goal, secret and operator log you have is filed here, and each one strengthens Engrams.", "+0.2% per filed record"),
+    R("engrams", "Index", "collection", "Every goal, secret and operator log you have is filed here, and so is every third zone event you win (up to 15). Each record strengthens Engrams.", "+0.2% per filed record"),
     R("paradox", "Mirror", "catch-up", "The material zone furthest behind is mirrored: it gets a boost that grows with the Paradox you hold.", "a stronger reflection"),
     R("spores", "Spread", "collection", "Spores drift into every zone that is running. Each material zone with producers this run strengthens Spores.", "+0.4% per running zone"),
     R("mycelium", "Knots", "set", "Each Spores and Mycelium tier you own this run ties a knot in the web. Each knot strengthens Mycelium, and all twelve double it.", "+0.5% per knot"),
@@ -276,7 +276,9 @@ export function weather(s: State): { phase: "clear" | "front" | "storm"; mul: nu
 }
 export const pulseSecs = (s: State) => T.pulseSecs * Math.max(0.3, 1 - T.pulseLv * L(s, "pulsars")) / (linkOn(s, "deep") && weather(s).phase === "storm" ? 2 : 1);
 export const wellMul = (s: State) => 1 + (T.well + T.wellLv * L(s, "singularity")) * Math.log10(1 + rig(s).well);
-export const indexed = (s: State) => s.ach.length + s.logs.length + (linkOn(s, "origin") ? rig(s).rw : 0);
+/** Zone events you have won, filed as records: one per indexWinEvery wins, up to indexWinMax. */
+export const eventRecords = (s: State) => Math.min(T.indexWinMax, Math.floor(s.life.intrusions / T.indexWinEvery));
+export const indexed = (s: State) => s.ach.length + s.logs.length + eventRecords(s) + (linkOn(s, "origin") ? rig(s).rw : 0);
 export const indexMul = (s: State) => 1 + (T.index + T.indexLv * L(s, "engrams")) * indexed(s);
 /** The material zone furthest behind (fewest producers among those running, Copper to Engrams). */
 export function mirrored(s: State): MatId | null {
