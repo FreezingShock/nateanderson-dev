@@ -201,6 +201,36 @@ export function Starwright() {
         },
     });
 
+    // ---- integer pixel scale --------------------------------------------------------------------------------------
+    // The star is W x H art pixels. At a fractional CSS size the browser draws some pixels one device pixel wider than
+    // others (3 and 4 device px on a 3x phone). So the canvas is sized to a whole number of device pixels per art pixel,
+    // rounded up so it still covers the scene as object-fit cover did, and centred where cover centred it.
+    useEffect(() => {
+        const c = canvasRef.current;
+        const scene = c?.parentElement;
+        if (!c || !scene) return;
+        const fit = () => {
+            const root = scene.parentElement;
+            const shift = parseFloat(root ? getComputedStyle(root).getPropertyValue("--sw-shift") : "0") || 0;
+            const sw = scene.clientWidth, sh = scene.clientHeight;
+            if (!sw || !sh) return;
+            const dpr = window.devicePixelRatio || 1;
+            const boxW = sw + shift; // the canvas used to be `100% + shift` wide, starting `shift` px left of the scene
+            const cover = Math.max(boxW / W, sh / H);
+            const k = Math.ceil(cover * dpr) / dpr; // CSS px per art px, a whole number of device px
+            const cw = W * k, ch = H * k;
+            c.style.width = `${cw}px`;
+            c.style.height = `${ch}px`;
+            c.style.left = `${-shift + boxW / 2 - cw / 2}px`;
+            c.style.top = `${sh / 2 - ch / 2}px`;
+        };
+        fit();
+        const ro = new ResizeObserver(fit);
+        ro.observe(scene);
+        window.addEventListener("resize", fit);
+        return () => { ro.disconnect(); window.removeEventListener("resize", fit); };
+    }, [ready]);
+
     // ---- the scene -----------------------------------------------------------------------------------------------
     useEffect(() => {
         if (!ready) return;
