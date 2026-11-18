@@ -19,7 +19,7 @@ How to verify a UI item: production build, 1440 and 390 wide, PNGs saved to `/mn
 - [ ] ASK PERF-gb-real-device | size S | All numbers in `/mnt/project-files/portfolio/perf-audit-2026-11-15/groundbreak.md` are headless Chromium. Needs a real phone: playable time, frame feel with the tower at 40 storeys, and a multi-hour soak. Scene-art preloading gave no gain in time to playable, so do not redo it without new evidence | device
 - [x] ASK GB-perk-names-touch | size S | Chosen by Nate 2026-11-18: tap to read, tap again to buy. Built: first tap shows the name and effect in the Firm footer, second tap buys | taste
 - [x] ASK GB-firm-desktop-layout | size S | Chosen by Nate 2026-11-18: two columns. Built: stats and Incorporate left, perk grid right; the long reason copy is hidden on desktop (the footer line says the same) | taste
-- [ ] ASK GB-crews-chip-phone | size S | The Crews chip is hidden under 520 px wide, so phone players never see their crew count. Recommend showing it as icon and number in the chip row | taste
+- [x] ASK GB-crews-chip-phone | size S | Done 2026-11-18: Nate chose "Show it as icon and number". The Crews chip shows on phones. To fit the three chips at 390 px the East Bay label is hidden on phones; the Firm window still names the city | `app/camino/groundbreak.css`
 - [ ] ASK GB-real-phone-safari | size S | Real phone and Safari playthrough. Neither can be tested by a thread | device
 - [ ] ASK GB-live-check | size S | Live-site check after the next deploy. The password gate returns 401 to threads | device
 

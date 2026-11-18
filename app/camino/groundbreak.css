@@ -232,7 +232,6 @@ html.gb-route .sf-foot { display: none !important; }
 @media (prefers-reduced-motion: reduce), (max-height: 0px) { .gb-win, .gb-card, .gb-away, .gb-job-body, .gb-feed li { animation-duration: .01s !important; } .gb-rail-btn[data-ping]::before, .gb-tile[data-ready] { animation: none; } }
 .gb-root[data-reduce="true"] .gb-win, .gb-root[data-simple="true"] .gb-win { animation-duration: .01s !important; }
 
-@media (max-width: 520px) { .gb-res li:nth-child(3) { display: none; } }
 
 /* change order, costs, perks */
 .gb-change { margin: 0 12px 12px; padding: 8px; background: #2a1e12; border: 1px solid var(--gb-amber); display: grid; gap: 6px; animation: gbIn .2s ease-out; }
@@ -681,8 +680,9 @@ html.gb-route .sf-foot { display: none !important; }
     .gb-root .gb-title { display: none; }
     .gb-root .gb-top { height: 56px; padding-left: 6px; padding-right: 6px; gap: 6px; }
     .gb-root .gb-back { min-width: 40px; height: 40px; min-height: 40px; padding: 0 8px; }
-    .gb-root .gb-res { gap: 6px; flex: none; }
-    .gb-root .gb-res li { min-height: 40px; padding: 0 8px 0 6px; gap: 5px; }
+    .gb-root .gb-brand { display: none; }
+    .gb-root .gb-res { gap: 5px; flex: none; }
+    .gb-root .gb-res li { min-height: 40px; padding: 0 6px 0 5px; gap: 5px; }
     .gb-root .gb-res b { font-size: 15px; }
 }
 
