@@ -24,12 +24,9 @@ export const GATE = {
 
 /** The plain-text password, or "" when none is set. Empty means the gate refuses every password. */
 export const gatePassword = () => process.env.SITE_PASSWORD || "";
-let warnedSecret = false;
+// In production a missing secret fails closed (the request errors) instead of signing cookies with a public default.
 export const gateSecret = () => {
     if (process.env.SITE_GATE_SECRET) return process.env.SITE_GATE_SECRET;
-    if (process.env.NODE_ENV === "production" && !warnedSecret) {
-        warnedSecret = true;
-        console.warn("[gate] SITE_GATE_SECRET is not set: the unlock cookie is signed with a built-in default. Set it in Vercel.");
-    }
+    if (process.env.NODE_ENV === "production") throw new Error("SITE_GATE_SECRET must be set in production.");
     return "fractured-gate-dev-secret-set-SITE_GATE_SECRET";
 };
