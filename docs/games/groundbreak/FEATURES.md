@@ -110,6 +110,7 @@ Thread names change each wave; the file split is what matters. Before editing a 
 | 42 dither icons (64 px): materials, currencies, equipment, phases, perks, drawn from the one shared sheet | working | `components/groundbreak-art/icons.ts` (`GB_ICONS`), `build-icons.py`, `Ico` in `groundbreak.tsx` | none |
 | Header: site board, location plate, stage and job progress; job card with phases and pay | working | `groundbreak.tsx` `gb-top`, `gb-job` | none |
 | Phone layout under 860 px; landscape phone under 500 px high | partial | `groundbreak.css` media rules | none |
+| Phone header shows cash, reputation and the Crews chip (icon and number); the East Bay label is hidden on phones to fit | working at 390 px (late seed, HUD check) | `groundbreak.css` phone block | HUD check `late 390x844` |
 
 ## Pacing
 
