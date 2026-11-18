@@ -13,13 +13,16 @@
 import { createHash } from "node:crypto";
 import { readFileSync, readdirSync, writeFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 
-const ROOT = new URL("../..", import.meta.url).pathname;
+const ROOT = fileURLToPath(new URL("../..", import.meta.url));
 const ART = join(ROOT, "public/naos/nodefarm");
 const CSS_DIR = join(ROOT, "app/camino");
 const TS_OUT = join(ROOT, "lib/nodefarm/art/art-version.ts");
 const check = process.argv.includes("--check");
 const errors = [];
+// Git may check files out with CRLF on Windows, so compare the generated file with LF on both sides.
+const lf = (s) => s.replace(/\r\n/g, "\n");
 
 const hash = {};
 for (const f of readdirSync(ART).sort()) {
@@ -50,7 +53,7 @@ export const ART_V: Record<string, string> = ${JSON.stringify(hash, null, 4).rep
 /** \`/naos/nodefarm/<file>?v=<hash>\` so a regenerated sheet never meets a stale cached copy. */
 export const nfArt = (file: string) => \`/naos/nodefarm/\${file}?v=\${ART_V[file] ?? "0"}\`;
 `;
-if (!existsSync(TS_OUT) || readFileSync(TS_OUT, "utf8") !== ts) {
+if (!existsSync(TS_OUT) || lf(readFileSync(TS_OUT, "utf8")) !== ts) {
     if (check) errors.push("lib/nodefarm/art/art-version.ts is stale");
     else { writeFileSync(TS_OUT, ts); console.log("wrote lib/nodefarm/art/art-version.ts"); }
 }
