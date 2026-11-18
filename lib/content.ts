@@ -2,6 +2,7 @@
 // To add/edit a project: update the row directly, or ask Claude to run the SQL.
 // No code change needed for new content — just new rows.
 
+import { cache } from "react";
 import { supabase } from "@/lib/supabase";
 
 export type ProjectStatus = "active" | "planning" | "idea";
@@ -77,13 +78,9 @@ async function fetchSection(section: "projects" | "renovations"): Promise<Feed<P
     };
 }
 
-export function getProjects(): Promise<Feed<Project>> {
-    return fetchSection("projects");
-}
+export const getProjects = cache((): Promise<Feed<Project>> => fetchSection("projects"));
 
-export function getRecentRenovations(): Promise<Feed<Project>> {
-    return fetchSection("renovations");
-}
+export const getRecentRenovations = cache((): Promise<Feed<Project>> => fetchSection("renovations"));
 
 // Per-project detail pages (/creations/[slug]) need the section too, to
 // know which accent color and icon to theme the page with.

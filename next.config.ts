@@ -22,6 +22,11 @@ const nextConfig: NextConfig = {
                 headers: [{ key: "Cache-Control", value: "public, max-age=604800, stale-while-revalidate=86400" }],
             },
             {
+                // Other static art folders: a day at the edge and browser, a week stale-while-revalidate. Not immutable, since names are not versioned.
+                source: "/:dir(starwright|flags|brasswork|home|games|groundbreak|creations)/:path*",
+                headers: [{ key: "Cache-Control", value: "public, max-age=86400, stale-while-revalidate=604800" }],
+            },
+            {
                 source: "/:path*",
                 headers: [
                     // Vercel already sets a bare `Strict-Transport-Security:
@@ -39,6 +44,8 @@ const nextConfig: NextConfig = {
                         value: "max-age=63072000; includeSubDomains; preload",
                     },
                     { key: "X-Content-Type-Options", value: "nosniff" },
+                    // Minimal CSP: no inline-script rules, so nothing existing breaks. A fuller nonce-based policy is a follow-up.
+                    { key: "Content-Security-Policy", value: "base-uri 'self'; object-src 'none'; frame-ancestors 'none'" },
                     { key: "X-Frame-Options", value: "DENY" },
                     { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
                     {

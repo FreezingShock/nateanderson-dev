@@ -10,7 +10,8 @@ const require = createRequire(import.meta.url);
 const { chromium } = require("playwright");
 
 const BASE = process.env.BASE_URL || "http://localhost:3000";
-const PASSWORD = process.env.SITE_PASSWORD || "dean";
+const PASSWORD = process.env.SITE_PASSWORD;
+if (!PASSWORD) throw new Error("Set SITE_PASSWORD (the site gate password) before running this script.");
 const outDir = process.argv[2] || "bench-out";
 mkdirSync(outDir, { recursive: true });
 
