@@ -39,6 +39,16 @@
   --cm-violet:    #a58bff;   /* category flag (zoning-style data) */
   --cm-lime:      #d8e86a;   /* rare colour-break card */
 
+  /* ---- Accent plumbing (2026-11-18). One name for the site's live colour.
+        --cm-accent* alias the current cyan, so nothing changes until a
+        direction is picked. New code uses --cm-accent; the cyan names stay
+        for existing rules and are retired in the apply pass. ------------- */
+  --cm-accent:      var(--cm-cyan);
+  --cm-accent-ink:  var(--cm-cyan-ink);
+  --cm-accent-deep: var(--cm-cyan-deep);
+  --cm-accent-wash: var(--cm-cyan-wash);
+  --cm-accent-rgb:  47, 216, 232;   /* for rgba() mixes: rgba(var(--cm-accent-rgb), .5) */
+
   /* ---- Type ----------------------------------------------------------- */
   --cm-display: "Helvetica Neue", Helvetica, var(--font-arimo), "Arimo", Arial, sans-serif;
   --cm-mono:    var(--font-plex-mono), "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
@@ -116,6 +126,7 @@
   --cm-cyan-wash: rgba(10,143,154,.1);
   --cm-alert: #e8412c;
   --cm-shadow: 0 18px 40px -28px rgba(0,0,0,.35);
+  --cm-accent: var(--cm-cyan); --cm-accent-ink: var(--cm-cyan-ink); --cm-accent-deep: var(--cm-cyan-deep); --cm-accent-wash: var(--cm-cyan-wash); --cm-accent-rgb: 10, 143, 154;
 }
 
 /* Reduced motion, one rule for the whole site: every transition and animation finishes at once on its end state
