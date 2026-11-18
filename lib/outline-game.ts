@@ -187,6 +187,13 @@ export function dayNumber(date: string): number {
     return Math.round(Date.UTC(y, m - 1, d) / 86_400_000);
 }
 
+/** Countdown clock: HH:MM:SS, each part zero-padded. */
+export function formatCountdown(n: number): string {
+    return [Math.floor(n / 3600), Math.floor((n % 3600) / 60), n % 60]
+        .map((x) => String(x).padStart(2, "0"))
+        .join(":");
+}
+
 /** Seconds until the next Pacific-time midnight. */
 export function secondsToNextDaily(now = Date.now()): number {
     const parts = new Intl.DateTimeFormat("en-GB", {

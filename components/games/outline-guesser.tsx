@@ -20,20 +20,18 @@ import {
     useGameKeys,
     CountryCombobox,
     COLOR,
-    EMPTY_STATS,
     FilterPanel,
     GuessRow,
     StatsPanel,
     load,
     makeGuess,
     save,
-    type AllStats,
     type Guess,
     type Mode,
     type Status,
     type Unit,
 } from "@/components/games/guess-kit";
-import { GLASS_CLASS, loadStats, saveStats } from "@/components/games/guess-kit";
+import { GLASS_CLASS, useGuessProgress } from "@/components/games/guess-kit";
 import { GuessModeTabs, MODE_PANEL_ID } from "@/components/games/mode-tabs";
 import { cn } from "@/lib/utils";
 import { sfx } from "@/lib/sound/sounds";
@@ -53,7 +51,7 @@ import {
     pctSquares,
     poolFor,
     scoreGame,
-    secondsToNextDaily,
+    formatCountdown,
     seededShuffle,
     todayPT,
     type Country,
@@ -110,13 +108,8 @@ export function OutlineGuesser() {
     const [freshIndex, setFreshIndex] = useState(-1);
     const [round, setRound] = useState(0);
     const [unit, setUnit] = useState<Unit>("km");
-    const [stats, setStats] = useState<AllStats>({
-        daily: EMPTY_STATS(),
-        unlimited: EMPTY_STATS(),
-    });
     const [showStats, setShowStats] = useState(false);
     const [copied, setCopied] = useState(false);
-    const [countdown, setCountdown] = useState(0);
     const [stage, setStage] = useState<1 | 2 | 3 | 4>(1);
     const [flag, setFlag] = useState<FlagState | null>(null);
     const [confirmRestart, setConfirmRestart] = useState(false);
@@ -124,10 +117,20 @@ export function OutlineGuesser() {
     // Unlimited-mode filters; an empty list means "all".
     const [difficulties, setDifficulties] = useState<number[]>([]);
     const [regions, setRegions] = useState<string[]>([]);
-    // Unlimited opens after one finished daily. `justUnlocked` drives the
-    // tab's unlock flash for a few seconds.
-    const [unlocked, setUnlocked] = useState(false);
-    const [justUnlocked, setJustUnlocked] = useState(false);
+    const {
+        stats,
+        unlocked,
+        justUnlocked,
+        countdown,
+        loadProgress,
+        recordFinish,
+    } = useGuessProgress({
+        app: "outline-guesser",
+        statsKey: K.stats,
+        unlockKey: K.unlock,
+        mode,
+        status,
+    });
     const [dir, setDir] = useState<"r" | "l">("r");
 
     const deck = useRef<Country[]>([]);
@@ -226,17 +229,7 @@ export function OutlineGuesser() {
     useEffect(() => {
         if (!countries) return;
         setUnit(load<Unit>(K.unit, "km"));
-        const saved = loadStats("outline-guesser", K.stats);
-        setStats({
-            daily: { ...EMPTY_STATS(), ...saved.daily },
-            unlimited: { ...EMPTY_STATS(), ...saved.unlimited },
-        });
-        // Unlimited stays locked until a daily is finished. Players who already
-        // have daily results on this device keep it open.
-        const isUnlocked =
-            load<boolean>(K.unlock, false) || (saved.daily?.played ?? 0) > 0;
-        if (isUnlocked) save(K.unlock, true);
-        setUnlocked(isUnlocked);
+        const isUnlocked = loadProgress();
         const fromUrl = new URLSearchParams(window.location.search).get("mode");
         const asked: Mode =
             fromUrl === "daily" || fromUrl === "unlimited"
@@ -297,60 +290,14 @@ export function OutlineGuesser() {
         });
     }, [mode, answer, guesses, status, hints, gaveUp, nb, flag]);
 
-    // Countdown to the next daily.
-    useEffect(() => {
-        if (mode !== "daily" || status === "playing") return;
-        const tick = () => setCountdown(secondsToNextDaily());
-        tick();
-        const id = setInterval(tick, 1000);
-        return () => clearInterval(id);
-    }, [mode, status]);
-
     // ---- Finishing a game ----
     const finish = useCallback(
         (result: "won" | "lost", used: number) => {
             setStatus(result);
-            // Finishing any daily (won or lost) opens Unlimited for good.
-            if (mode === "daily" && !unlocked) {
-                setUnlocked(true);
-                setJustUnlocked(true);
-                save(K.unlock, true);
-                // Lands after the result sound, so the rising unlock tone is heard on its own.
-                window.setTimeout(() => sfx("level"), 650);
-            }
-            setStats((prev) => {
-                const today = todayPT();
-                // A replayed daily doesn't count twice.
-                if (mode === "daily" && prev.daily.last === today) return prev;
-                const s = { ...prev[mode], dist: [...prev[mode].dist] };
-                s.played += 1;
-                if (result === "won") {
-                    s.won += 1;
-                    s.dist[used - 1] += 1;
-                    const continues =
-                        mode === "unlimited" ||
-                        (s.last !== "" &&
-                            dayNumber(today) - dayNumber(s.last) === 1);
-                    s.streak = continues ? s.streak + 1 : 1;
-                    s.best = Math.max(s.best, s.streak);
-                } else {
-                    s.streak = 0;
-                }
-                if (mode === "daily") s.last = today;
-                const next = { ...prev, [mode]: s };
-                saveStats("outline-guesser", K.stats, next);
-                return next;
-            });
+            recordFinish(result, used);
         },
-        [mode, unlocked]
+        [recordFinish]
     );
-
-    // The unlock flash on the Unlimited tab lasts a few seconds.
-    useEffect(() => {
-        if (!justUnlocked) return;
-        const id = window.setTimeout(() => setJustUnlocked(false), 2400);
-        return () => window.clearTimeout(id);
-    }, [justUnlocked]);
 
     // ---- Input ----
     const guessedCodes = useMemo(
@@ -489,10 +436,6 @@ export function OutlineGuesser() {
               ? "var(--cm-alert)"
               : "#ffffff";
     const s = stats[mode];
-    const fmtCountdown = (n: number) =>
-        [Math.floor(n / 3600), Math.floor((n % 3600) / 60), n % 60]
-            .map((x) => String(x).padStart(2, "0"))
-            .join(":");
 
     if (!countries || !answer) {
         return (
@@ -642,7 +585,7 @@ export function OutlineGuesser() {
             ) : (
                 <>
                     <span className="font-mono text-sm tabular-nums text-muted-foreground">
-                        Next daily in {fmtCountdown(countdown)}
+                        Next daily in {formatCountdown(countdown)}
                     </span>
                     <button
                         type="button"

@@ -13,12 +13,14 @@ import {
 import { cn } from "@/lib/utils";
 import { loadSave, writeSave } from "@/lib/saves/core";
 import { statsSave } from "@/lib/games/guess-stats";
+import { sfx } from "@/lib/sound/sounds";
 import {
     DIFFICULTIES,
     DIRECTION_NAME,
     MAX_GUESSES,
     REGIONS,
     bearingDeg,
+    dayNumber,
     direction8,
     findExact,
     flagSrc,
@@ -27,6 +29,8 @@ import {
     pctColor,
     proximityPct,
     searchNames,
+    secondsToNextDaily,
+    todayPT,
     type Country,
 } from "@/lib/outline-game";
 
@@ -228,6 +232,112 @@ export function loadStats(app: string, key: string): Partial<AllStats> {
 /** Writes a game's streak stats. Never throws. */
 export function saveStats(app: string, key: string, value: Partial<AllStats>) {
     writeSave(localOrNull(), statsSave(app, key, MAX_GUESSES), value);
+}
+
+// Progress shared by the Outline and Flag Guessers: the streak stats, the
+// Unlimited unlock that a finished daily opens, and the countdown to the next
+// daily. Each guesser keeps its own round state.
+export function useGuessProgress({
+    app,
+    statsKey,
+    unlockKey,
+    mode,
+    status,
+}: {
+    app: string;
+    statsKey: string;
+    unlockKey: string;
+    mode: Mode;
+    status: Status;
+}) {
+    const [stats, setStats] = useState<AllStats>({
+        daily: EMPTY_STATS(),
+        unlimited: EMPTY_STATS(),
+    });
+    const [countdown, setCountdown] = useState(0);
+    // Unlimited opens after one finished daily. `justUnlocked` drives the
+    // tab's unlock flash for a few seconds.
+    const [unlocked, setUnlocked] = useState(false);
+    const [justUnlocked, setJustUnlocked] = useState(false);
+
+    // Countdown to the next daily.
+    useEffect(() => {
+        if (mode !== "daily" || status === "playing") return;
+        const tick = () => setCountdown(secondsToNextDaily());
+        tick();
+        const id = setInterval(tick, 1000);
+        return () => clearInterval(id);
+    }, [mode, status]);
+
+    // The unlock flash on the Unlimited tab lasts a few seconds.
+    useEffect(() => {
+        if (!justUnlocked) return;
+        const id = window.setTimeout(() => setJustUnlocked(false), 2400);
+        return () => window.clearTimeout(id);
+    }, [justUnlocked]);
+
+    // First load: the stats, and whether Unlimited is open. Unlimited stays
+    // locked until a daily is finished. Players who already have daily results
+    // on this device keep it open. Returns whether Unlimited is open.
+    const loadProgress = useCallback(() => {
+        const saved = loadStats(app, statsKey);
+        setStats({
+            daily: { ...EMPTY_STATS(), ...saved.daily },
+            unlimited: { ...EMPTY_STATS(), ...saved.unlimited },
+        });
+        const isUnlocked =
+            load<boolean>(unlockKey, false) || (saved.daily?.played ?? 0) > 0;
+        if (isUnlocked) save(unlockKey, true);
+        setUnlocked(isUnlocked);
+        return isUnlocked;
+    }, [app, statsKey, unlockKey]);
+
+    // Records a finished round: the unlock, then the stats.
+    const recordFinish = useCallback(
+        (result: "won" | "lost", used: number) => {
+            // Finishing any daily (won or lost) opens Unlimited for good.
+            if (mode === "daily" && !unlocked) {
+                setUnlocked(true);
+                setJustUnlocked(true);
+                save(unlockKey, true);
+                // Lands after the result sound, so the rising unlock tone is heard on its own.
+                window.setTimeout(() => sfx("level"), 650);
+            }
+            setStats((prev) => {
+                const today = todayPT();
+                // A replayed daily doesn't count twice.
+                if (mode === "daily" && prev.daily.last === today) return prev;
+                const s = { ...prev[mode], dist: [...prev[mode].dist] };
+                s.played += 1;
+                if (result === "won") {
+                    s.won += 1;
+                    s.dist[used - 1] += 1;
+                    const continues =
+                        mode === "unlimited" ||
+                        (s.last !== "" &&
+                            dayNumber(today) - dayNumber(s.last) === 1);
+                    s.streak = continues ? s.streak + 1 : 1;
+                    s.best = Math.max(s.best, s.streak);
+                } else {
+                    s.streak = 0;
+                }
+                if (mode === "daily") s.last = today;
+                const next = { ...prev, [mode]: s };
+                saveStats(app, statsKey, next);
+                return next;
+            });
+        },
+        [mode, unlocked, app, statsKey, unlockKey]
+    );
+
+    return {
+        stats,
+        unlocked,
+        justUnlocked,
+        countdown,
+        loadProgress,
+        recordFinish,
+    };
 }
 
 export function makeGuess(guess: Country, answer: Country): Guess {
