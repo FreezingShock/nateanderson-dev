@@ -80,3 +80,8 @@ Post the taste calls as one decision-card stack with a recommendation, then buil
 - [x] REVIEW-expedition-banner | size S | Nate chose the fade. The bright block at the banner's left edge fades into the dark title band (mask on the Expedition banner only) | `components/automation/expedition-window.css` | this PR
 - [x] REVIEW-tabs-look | size S | Nate chose plain tabs. The Settings tab row (phone and short desktop) is text on a hairline, with a brass underline on the picked tab | `components/automation/settings-window.css` | this PR
 - [ ] ASK REVIEW-verdigris-confirm | size S | SWEEP-world-verdigris is marked done (olive-bronze recolour), and the ASK line above is still open. Nate has not confirmed the recolour. He should confirm it or pick the exact colour | `lib/automation/models/*/palette.ts`
+
+## Resolution 2026-11-18 (thread "Sharpen game resolution on all screens")
+- [x] RES-retina-canvas | size S | The island draws at device pixel ratio up to 2, so retina and phone pixel blocks are no longer stretched by the browser; block size and look unchanged. Done when 2x and 3x backing matches the screen and 1x is unchanged | `lib/automation/render/index.ts` (`deviceRatio`, `blockPixels`), `app/camino/brasswork.css` `.bw-canvas` | #PR
+- [ ] ASK RES-open-mood | size S | The page opens at dusk-to-day blend (`timeOfDay` 0.4): the day fog and dusk sky mix to a mauve plateau. Nate to choose the opening mood (Dusk is the approved spec look; Day is brown and orange) | `components/brasswork/brasswork-host.tsx` (`setTimeOfDay`, host options)
+- [ ] RES-phone-fps | size S | Check frame rate on a real phone after RES-retina-canvas (the pixel pass now fills about 4x the pixels at 2x on 3x phones). Not testable headless | `lib/automation/render/governor.ts`
