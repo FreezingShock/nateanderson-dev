@@ -34,6 +34,9 @@ jobs:
               with:
                   node-version: 22
                   cache: npm
+                  cache-dependency-path: |
+                      package-lock.json
+                      scripts/ci/package-lock.json
             - run: npm ci --no-audit --no-fund
             - name: Typecheck
               run: npx tsc --noEmit
@@ -41,21 +44,29 @@ jobs:
             # The same run includes the automation input tests (tests/automation), so there is no separate step for them.
             - name: Node Farm engine tests
               run: npm run test:nodefarm
+            # Next's build cache. Keyed on the lockfile and the source the build reads, so a re-run of the same
+            # source restores it. Otherwise it falls back to the newest cache for the same lockfile.
             - uses: actions/cache@v4
               with:
                   path: .next/cache
-                  key: next-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-${{ github.sha }}
-                  restore-keys: next-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-
+                  key: next-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-${{ hashFiles('next.config.ts', 'tsconfig.json', 'postcss.config.mjs', 'proxy.ts', 'app/**', 'components/**', 'lib/**', 'public/**') }}
+                  restore-keys: |
+                      next-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-
             - name: Build
               run: npm run build
             - name: Crawl for broken links
               run: |
                   npx next start -p 3123 > server.log 2>&1 &
                   node scripts/ci/crawl.mjs http://localhost:3123 || { echo "--- server log ---"; tail -40 server.log; exit 1; }
+            - uses: actions/cache@v4
+              with:
+                  path: ~/.cache/ms-playwright
+                  key: playwright-${{ runner.os }}-${{ hashFiles('scripts/ci/package-lock.json') }}
             - name: Install browser for the stuck-text check
               working-directory: scripts/ci
+              # --with-deps still installs the system libraries on a cache hit; the cache only skips the download.
               run: |
-                  npm install --no-audit --no-fund
+                  npm ci --no-audit --no-fund
                   npx playwright install --with-deps chromium
             - name: Stuck-text check
               run: node scripts/ci/motion-stuck.mjs http://localhost:3123 || { echo "--- server log ---"; tail -40 server.log; exit 1; }
@@ -92,6 +103,7 @@ jobs:
                   cache-dependency-path: |
                       head/package-lock.json
                       base/package-lock.json
+                      head/scripts/ci/package-lock.json
             - name: Install and build both
               run: |
                   (cd head && npm ci --no-audit --no-fund && npm run build) &
@@ -99,10 +111,14 @@ jobs:
                   (cd base && npm ci --no-audit --no-fund && npm run build) &
                   p2=$!
                   wait $p1 && wait $p2
+            - uses: actions/cache@v4
+              with:
+                  path: ~/.cache/ms-playwright
+                  key: playwright-${{ runner.os }}-${{ hashFiles('head/scripts/ci/package-lock.json') }}
             - name: Install screenshot tools
               working-directory: head/scripts/ci
               run: |
-                  npm install --no-audit --no-fund
+                  npm ci --no-audit --no-fund
                   npx playwright install --with-deps chromium
             - name: Screenshot base and head
               # The two runs use separate servers and output folders, so they go side by side.
