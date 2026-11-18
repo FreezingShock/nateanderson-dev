@@ -61,6 +61,10 @@ Defaults: windowed games get the three windowed views, the HUD gets the seven st
 
 Known noise: the Groundbreak pages show live game state (stock counts, workers, the first-minute run), so a PR that changes the engine or the start state, such as #534, shows a 1 to 5% diff with no art change. `phone__creations-games-brasswork` shows about 1% on most PRs (animated scene) even when the PR does not touch it. Read the diff image before assuming a PR broke a page.
 
+## Contrast check
+
+`node scripts/ci/contrast.mjs <base> [out.json]` measures the dim and muted text tokens (`--cm-dim`, `--cm-mute`, `--cm-paper-mute` in `app/camino/camino.tokens.css`) on the real pixels behind each label, at 1440 and 390 over the eight main routes. It is not a PR gate. It needs `cd scripts/ci && npm ci && npx playwright install chromium` first. Text is made transparent and each label is read inside its own border at every scroll position. Judge a token by the median background (`p50`): a label whose median background is darker than #2e2e2e is on the dithered page, and lighter ones are component fills. The table counts labels whose 5th-percentile pixel is under the threshold, which is noisy for one-glyph spans; `min` is the single worst pixel. Headless Chromium only.
+
 ## Files
 
 - `scripts/ci/checks/run.mjs`: the CLI. `registry.mjs`: `registerGame`, the defaults and validation. `games.mjs`: the game configs. `kit.mjs`: browser, gate cookie, the report and page helpers.

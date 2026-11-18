@@ -24,6 +24,7 @@ Format and rules: `docs/WORKFLOW.md`. Append new items at the end of a section; 
 - [ ] SITE-speed-home-cards | S | homepage Play cards load 337, 196 and 95 KB 1200w webp on phones when scrolled; a 960w phone tier would save about 100 KB. The current webp is already optimal, so it is lossy-only; needs a look check | components/home/games-showcase.tsx
 - [ ] SITE-speed-guesser-js | M | flag and outline guessers each ship about 400 KB gz JS; find how much is shared site code and how much is the game | components/games/
 - [ ] SITE-speed-brasswork-three | L | Brasswork's 3D renderer (about 88 KB gz) loads on first paint because the island is the first screen; only worth a change if the island gets a loading state | components/brasswork/brasswork-host.tsx
+- [ ] SITE-stuck-timeline-tab | S | `scripts/ci/motion-stuck.mjs` fails 3 runs in 4 on the baseline build too: after tabbing on /timeline at 390, the phase buttons ("01 / September 2026 — Summer 2027") and "Hide" stay scrambled past 3 s. It is a blocking check, so it can fail a PR at random | docs/ci.md
 
 ## Needs Nate
 (waiting on a decision, Nate's content or his own device; `ASK` prefix)
@@ -40,6 +41,8 @@ Format and rules: `docs/WORKFLOW.md`. Append new items at the end of a section; 
 - [ ] ASK SITE-games-chrome | S | the games disagree on site chrome (Node Farm keeps header, dock and footer; the other three hide them); pick one rule, or leave | audit site-integration-audit-2026-11-15
 - [ ] ASK SHELL-node-farm-window | M | move Node Farm from its framed page into the windowed panel too, or keep it framed (current) | Nate's taste; the Node Farm thread owns the page
 - [ ] ASK SITE-timeline-markers-layout | M | journey markers on phones are 32px and their centres sit 0, 18 and 29 px apart (two share a spot), so a 44px tap area would overlap the next marker and a CSS-only fix would open the wrong milestone. Milestone cards already have 79 to 105px headers. Options: (1) on phones, list the milestones as 44px rows and drop the track (recommended); (2) keep the track and let a tap on overlapping markers open a picker; (3) leave it | claude/site-polish-taps-contrast
+- [ ] ASK SITE-contrast-dim | S | `--cm-dim` (#75858e) is 3.6 to 3.9:1 on the dithered page for 5 labels: footer "keyboard shortcuts" and "?", the /history notes, the home "—" and the games "/" separators. Lifting the token by the minimum that clears them (+5.5 L, #75858e to #84939b) changes 33 uses in 14 files, games included, so it waits for Nate. Options: (1) move those 5 labels to `--cm-mute`, which clears 4.5 on every dithered label by median (lowest 4.65); no new colour (recommended); (2) lift the token to #84939b; (3) leave it | claude/site-polish-taps-contrast
+- [ ] ASK SITE-contrast-paper | S | paper-theme `--cm-dim` (#8a8f94 on #f2f3f1, about 3:1 by arithmetic) appears on none of the eight routes, so it is unmeasured; the "Hide" label on a light plate reads 3.6:1 at 390 on /timeline (dark-scope paper-mute on a light plate) | claude/site-polish-taps-contrast
 
 ## Ideas
 (offered to Nate, not picked)
