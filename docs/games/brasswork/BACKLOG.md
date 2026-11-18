@@ -83,5 +83,5 @@ Post the taste calls as one decision-card stack with a recommendation, then buil
 
 ## Resolution 2026-11-18 (thread "Sharpen game resolution on all screens")
 - [x] RES-retina-canvas | size S | The island draws at device pixel ratio up to 2, so retina and phone pixel blocks are no longer stretched by the browser; block size and look unchanged. Done when 2x and 3x backing matches the screen and 1x is unchanged | `lib/automation/render/index.ts` (`deviceRatio`, `blockPixels`), `app/camino/brasswork.css` `.bw-canvas` | #712
-- [x] RES-open-mood | size S | Nate chose Dusk (2026-11-18). New visitors open at Dusk (was a 0.4 day-dusk blend, mauve plateau); a saved mood still wins | `components/brasswork/brasswork-host.tsx` (mood default, island `timeOfDay`) | #PR
+- [x] RES-open-mood | size S | Nate chose Dusk (2026-11-18). New visitors open at Dusk (was a 0.4 day-dusk blend, mauve plateau); a saved mood still wins | `components/brasswork/brasswork-host.tsx` (mood default, island `timeOfDay`) | #715
 - [ ] RES-phone-fps | size S | Check frame rate on a real phone after RES-retina-canvas (the pixel pass now fills about 4x the pixels at 2x on 3x phones). Not testable headless | `lib/automation/render/governor.ts`
