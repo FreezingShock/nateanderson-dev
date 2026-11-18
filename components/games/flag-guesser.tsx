@@ -7,7 +7,6 @@ import {
     Burst,
     COLOR,
     CountryCombobox,
-    EMPTY_STATS,
     FilterPanel,
     GLASS_CLASS,
     GLASS_STYLE,
@@ -15,19 +14,18 @@ import {
     KeyLegend,
     StatsPanel,
     StreakLine,
+    useGuessProgress,
     prefersReducedMotion,
     focusGameInput,
     useGameKeys,
     load,
     makeGuess,
     save,
-    type AllStats,
     type Guess,
     type Mode,
     type Status,
     type Unit,
 } from "@/components/games/guess-kit";
-import { loadStats, saveStats } from "@/components/games/guess-kit";
 import { GuessModeTabs, MODE_PANEL_ID } from "@/components/games/mode-tabs";
 import { cn } from "@/lib/utils";
 import { sfx } from "@/lib/sound/sounds";
@@ -42,7 +40,7 @@ import {
     flagSrc,
     pctSquares,
     poolFor,
-    secondsToNextDaily,
+    formatCountdown,
     seededShuffle,
     todayPT,
     type Country,
@@ -88,20 +86,25 @@ export function FlagGuesser() {
     const [round, setRound] = useState(0);
     const [order, setOrder] = useState<number[]>([0, 1, 2, 3, 4, 5]);
     const [unit, setUnit] = useState<Unit>("km");
-    const [stats, setStats] = useState<AllStats>({
-        daily: EMPTY_STATS(),
-        unlimited: EMPTY_STATS(),
-    });
     const [showStats, setShowStats] = useState(false);
     const [copied, setCopied] = useState(false);
-    const [countdown, setCountdown] = useState(0);
     const [difficulties, setDifficulties] = useState<number[]>([]);
     const [regions, setRegions] = useState<string[]>([]);
     const [deck, setDeck] = useState<Country[]>([]);
-    // Unlimited opens after one finished daily. `justUnlocked` drives the
-    // tab's unlock flash for a few seconds.
-    const [unlocked, setUnlocked] = useState(false);
-    const [justUnlocked, setJustUnlocked] = useState(false);
+    const {
+        stats,
+        unlocked,
+        justUnlocked,
+        countdown,
+        loadProgress,
+        recordFinish,
+    } = useGuessProgress({
+        app: "flag-guesser",
+        statsKey: K.stats,
+        unlockKey: K.unlock,
+        mode,
+        status,
+    });
     const [dir, setDir] = useState<"r" | "l">("r");
     const dailyDate = useMemo(() => ({ current: "" }), []);
     const rootRef = useRef<HTMLDivElement>(null);
@@ -191,23 +194,13 @@ export function FlagGuesser() {
     useEffect(() => {
         if (!countries) return;
         setUnit(load<Unit>(K.unit, "km"));
-        const saved = loadStats("flag-guesser", K.stats);
-        setStats({
-            daily: { ...EMPTY_STATS(), ...saved.daily },
-            unlimited: { ...EMPTY_STATS(), ...saved.unlimited },
-        });
         const f = load<{ d: number[]; r: string[] }>(K.filters, {
             d: [],
             r: [],
         });
         setDifficulties(f.d);
         setRegions(f.r);
-        // Unlimited stays locked until a daily is finished. Players who already
-        // have daily results on this device keep it open.
-        const isUnlocked =
-            load<boolean>(K.unlock, false) || (saved.daily?.played ?? 0) > 0;
-        if (isUnlocked) save(K.unlock, true);
-        setUnlocked(isUnlocked);
+        const isUnlocked = loadProgress();
         const fromUrl = new URLSearchParams(window.location.search).get("mode");
         const asked: Mode =
             fromUrl === "daily" || fromUrl === "unlimited"
@@ -256,60 +249,14 @@ export function FlagGuesser() {
         });
     }, [mode, answer, guesses, status, hints, gaveUp, dailyDate]);
 
-    // Countdown to the next daily.
-    useEffect(() => {
-        if (mode !== "daily" || status === "playing") return;
-        const tick = () => setCountdown(secondsToNextDaily());
-        tick();
-        const id = setInterval(tick, 1000);
-        return () => clearInterval(id);
-    }, [mode, status]);
-
     // ---- Finishing ----
     const finish = useCallback(
         (result: "won" | "lost", used: number) => {
             setStatus(result);
-            // Finishing any daily (won or lost) opens Unlimited for good.
-            if (mode === "daily" && !unlocked) {
-                setUnlocked(true);
-                setJustUnlocked(true);
-                save(K.unlock, true);
-                // Lands after the result sound, so the rising unlock tone is heard on its own.
-                window.setTimeout(() => sfx("level"), 650);
-            }
-            setStats((prev) => {
-                const today = todayPT();
-                // A replayed daily doesn't count twice.
-                if (mode === "daily" && prev.daily.last === today) return prev;
-                const s = { ...prev[mode], dist: [...prev[mode].dist] };
-                s.played += 1;
-                if (result === "won") {
-                    s.won += 1;
-                    s.dist[used - 1] += 1;
-                    const continues =
-                        mode === "unlimited" ||
-                        (s.last !== "" &&
-                            dayNumber(today) - dayNumber(s.last) === 1);
-                    s.streak = continues ? s.streak + 1 : 1;
-                    s.best = Math.max(s.best, s.streak);
-                } else {
-                    s.streak = 0;
-                }
-                if (mode === "daily") s.last = today;
-                const next = { ...prev, [mode]: s };
-                saveStats("flag-guesser", K.stats, next);
-                return next;
-            });
+            recordFinish(result, used);
         },
-        [mode, unlocked]
+        [recordFinish]
     );
-
-    // The unlock flash on the Unlimited tab lasts a few seconds.
-    useEffect(() => {
-        if (!justUnlocked) return;
-        const id = window.setTimeout(() => setJustUnlocked(false), 2400);
-        return () => window.clearTimeout(id);
-    }, [justUnlocked]);
 
     const guessed = useMemo(
         () => new Set(guesses.map((g) => g.code)),
@@ -412,10 +359,6 @@ export function FlagGuesser() {
     const open = new Set(order.slice(0, openCount));
     const justFlipped =
         playing && guesses.length > 0 ? order[openCount - 1] : -1;
-    const fmtCountdown = (n: number) =>
-        [Math.floor(n / 3600), Math.floor((n % 3600) / 60), n % 60]
-            .map((x) => String(x).padStart(2, "0"))
-            .join(":");
     const letters = answer.n.replace(/[^\p{L}]/gu, "").length;
     const hintList = [
         { key: "k", text: `Continent: ${answer.k}` },
@@ -703,7 +646,7 @@ export function FlagGuesser() {
                         ) : (
                             <>
                                 <span className="font-mono text-sm tabular-nums text-muted-foreground">
-                                    Next daily in {fmtCountdown(countdown)}
+                                    Next daily in {formatCountdown(countdown)}
                                 </span>
                                 <button
                                     type="button"
