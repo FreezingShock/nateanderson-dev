@@ -7,7 +7,9 @@ import { gate, getPrefs, keyClick, note, pick, tone, whoosh, type Bus } from "./
 //   - the game set (buying, unlocking, rewards): softer triangle and square voices on one pentatonic scale, so quick
 //     sequences always agree. Notes are scale degrees (0 = C4, 5 = C5).
 
-type Def = { tier: number | ((a: any) => number); bus: Bus; gap: number; play: (a: any) => void };
+// Entries declare their own argument type (a: { r: number }), so Def takes `never`, which each of them accepts. sfx is the one
+// caller and casts its unknown argument once.
+type Def = { tier: number | ((a: never) => number); bus: Bus; gap: number; play: (a: never) => void };
 
 const seq = (bus: Bus, degs: number[], step: number, o: { dur: number; gain: number; harm?: number; type?: OscillatorType; cutoff?: number; at?: number }) =>
     degs.forEach((d, i) => tone(bus, { f: note(d), at: (o.at ?? 0) + i * step, dur: o.dur, gain: o.gain, harm: o.harm, type: o.type, cutoff: o.cutoff ?? 3200, attack: 0.012 }));
@@ -589,6 +591,7 @@ export type SfxName = keyof typeof DEFS;
  */
 export function sfx(name: SfxName, arg?: unknown) {
     const d: Def = DEFS[name];
-    if (!gate(name, typeof d.tier === "function" ? d.tier(arg) : d.tier, d.gap)) return;
-    d.play(arg);
+    const a = arg as never;
+    if (!gate(name, typeof d.tier === "function" ? d.tier(a) : d.tier, d.gap)) return;
+    d.play(a);
 }

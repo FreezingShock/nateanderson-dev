@@ -15,7 +15,7 @@ export function normalizeStats(d: unknown, maxGuesses: number): Partial<GuessAll
     const out: Partial<GuessAllStats> = {};
     if (!d || typeof d !== "object") return out;
     for (const mode of MODES) {
-        const m = (d as Record<string, any>)[mode];
+        const m = (d as Record<string, unknown>)[mode] as Record<string, unknown> | undefined;
         if (!m || typeof m !== "object") continue;
         out[mode] = {
             played: count(m.played),
