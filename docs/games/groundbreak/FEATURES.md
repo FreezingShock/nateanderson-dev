@@ -88,7 +88,7 @@ Thread names change each wave; the file split is what matters. Before editing a 
 
 | Feature | State | Code | Test |
 |---|---|---|---|
-| Next-step cue chip, Space or G does it (accept, unlock, buy, perk, incorporate, wait) | working | `guide.ts` `nextCue`, `doCue`; `CueChip` | guide.test cue order, "bot that only follows the cue keeps progressing" |
+| Next move key (was the cue chip), Space or G does it (accept, unlock, buy, perk, incorporate, wait); shows the icon, the title, the price and a Space key cap, a progress bar while it waits on a material, and presses like a key (2026-11-19) | working | `guide.ts` `nextCue` (`Cue.cost`, `Cue.progress`), `doCue`; `CueChip` | guide.test cue order and cost/progress, "bot that only follows the cue keeps progressing" |
 | Keys: 1-0 - = pick a material, `[` `]` cycle, Y/N change order, `+` `_` zoom, arrows pan, R or Home reset view, `?` Menu, Esc closes | working | `groundbreak.tsx` key handler | none (UI) |
 | Site-wide shortcuts (`g` chord, `[` `]`, `?`) must exclude Groundbreak or the game keys do nothing | working, gotcha | `components/cm/keys.tsx` | none |
 | Console `gb`: stats, hire, unlock, jobs, change, overtime, perks, incorporate, skyline, open, next, go, auto, rate; `give` and `warp` are admin-gated | working | `commands.ts`, `commands-qol.ts` | engine.test "console commands", guide.test console |
@@ -117,6 +117,18 @@ Thread names change each wave; the file split is what matters. Before editing a 
 First run to the bridge is about 3 hours (Nate's pick). The bot test "finishes the campaign in about three hours" guards it. Nobody has played it by hand yet; see BACKLOG item 11.
 
 ### HUD layout
+
+**2026-11-19 overhaul (supersedes the cue, rail, zoom and phone-card details below where they differ).** Built on the PR 723 window chrome. Headless Chromium on a dev build only: no real phone, no Safari, no GPU, animations not watched live. Before and after shots: `/mnt/project-files/groundbreak-gui-2026-11-19/`.
+- One layout: header (Games back, name, stage and job counters, cash, rep, crews) on top; one toolbar under it (Jobs J, Skyline K, Firm F, Console C, Menu M, each with an icon, a label and its key, plus the zoom buttons); the dig in the middle; the Next move key and the dock at the bottom. Phone portrait shows the toolbar as six icon buttons and the reset-view button only. Phone landscape stacks the toolbar down the left (Console and zoom hidden).
+- Next move is the centre of the game: a wide key above the dock, hazard stripe on top, saying what to do next and what it costs. Space presses it. Buying from it no longer opens the material card.
+- Dock tiles: a hazard stripe along the foot of a tile when any tier of it is affordable (`data-can`), so you can see where money is useful. Unlocking and buying pop the tile.
+- Job card: a labelled progress bar and one line saying which phase is waiting on which material.
+- Material card: anchored to its dock tile with a notch on desktop; a bottom sheet on phones. Tap a tile to read, buy from the card.
+- Skyline and Firm windows: the two-column Firm layout is scoped to the Firm window (`data-id="firm"`), so Skyline no longer collapses to one column at 1440.
+- Juice (all skipped or shortened in reduced motion): buy pop with a "+1 crew" or "x2 output" float, cash chip flash on income, "On site" banner when a material opens, "Handed over" banner with the pay and rep when a job finishes, "Stage N" banner at a new stage, key-cap press on Next move. Motion durations come from `--cm-d-*` tokens. `components/groundbreak/groundbreak.tsx` (`spawnFloat`, `showMoment`, `buyFx`), `app/camino/groundbreak.css` (juice block).
+- Palette: panels are warm dark brown (`--gb-panel`) with amber hazard stripes, replacing the purple-tinted panels. No cyan.
+- Gotcha: the button reset is `.gb-root :where(button)` so single-class button rules win. A plain `.gb-root button` reset beats them and strips tile and rail backgrounds.
+- HUD check `scripts/ci/checks/run.mjs hud` is clear at all seven sizes with three seeds (54 checks); the window suite passes at 1440, 390 and 1366 by 657.
 
 - Floating HUD stacks on the dock: `groundbreak.tsx` measures the dock and sets `--gb-dock-top`; the cue, view buttons, feed and card use it (`groundbreak.css`, last block). Phone landscape moves the cue to the top. No overlaps at 1440, 390, 360, 375x667, 844x390, 932x430 (headless Chrome only).
 - Windows (Jobs, Skyline, Firm, Console, Menu): desktop, a 320 to 520 px panel docked beside the rail that ends above the dock, at least 200 px tall (on a short screen, about 657 px tall, the panel is at its 360 px minimum, so the window covers the top of the dock there; 2026-11-16), cue and feed hidden while open; phone, a bottom sheet over the dock (up to 50% tall, so the dig stays above it) with the top of the site showing, cue, view buttons and feed hidden. The material card is a sheet too (up to 50%). The welcome-back card is a strip under the header on phones, with the page line hidden (2026-11-16). Blank click and Esc close. `groundbreak.css`, last block. Headless Chrome only.

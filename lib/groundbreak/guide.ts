@@ -20,6 +20,10 @@ export interface Cue {
     perk?: string;
     /** A button can do it right now (false for "wait"). */
     doable: boolean;
+    /** What it costs, for the Next move button: the currency icon (`cash` or a material row) and the formatted amount. */
+    cost?: { cur: "cash" | number; text: string };
+    /** While waiting: how far along the purchase or unlock is, 0 to 1. */
+    progress?: number;
 }
 
 const TIER_NAME = ["crew", "equipment", "method"] as const;
@@ -77,7 +81,7 @@ function cueInner(s: State): Cue {
     const perk = PERKS.filter((p) => perkReady(s.perks, p) && s.charter >= p.cost).sort((a, b) => a.cost - b.cost)[0];
     if (perk) return { kind: "perk", text: `Spend charter on ${perk.name}`, why: perk.desc, perk: perk.id, doable: true };
     if (s.open < MATS.length && canUnlock(s, s.open)) {
-        return { kind: "unlock", text: `Bring ${MATS[s.open].name} on site`, why: `You hold enough ${MATS[s.open - 1].name}. A new material opens the next jobs.`, mat: s.open, doable: true };
+        return { kind: "unlock", text: `Bring ${MATS[s.open].name} on site`, why: `You hold enough ${MATS[s.open - 1].name}. A new material opens the next jobs.`, mat: s.open, doable: true, cost: { cur: s.open - 1, text: fmt(UNLOCK_COST[s.open]) } };
     }
     const target = bottleneck(s);
     // Best affordable purchase on the bottleneck row, then on its neighbours: method (x3) before equipment (x2) before a crew.
@@ -92,7 +96,7 @@ function cueInner(s: State): Cue {
             const why = n === target
                 ? `${m.name} is what the ${waitingFor(s) ? "next job" : "build"} is short of. Costs ${cost}.`
                 : `You can afford it now (${cost}) and it speeds ${m.name} up.`;
-            return { kind: "buy", text: what, why, mat: n, tier: k, doable: true };
+            return { kind: "buy", text: what, why, mat: n, tier: k, doable: true, cost: { cur: c.cur === "cash" ? "cash" : c.mat, text: c.cur === "cash" ? fmtCash(c.amount) : fmt(c.amount) } };
         }
     }
     if (canIncorporate(s, f)) {
@@ -112,12 +116,14 @@ function cueInner(s: State): Cue {
         const have = s.amt[s.open - 1], need = UNLOCK_COST[s.open];
         const rate = rawRate(s, s.open - 1, f, chain(s));
         if (!best || (rate > 0 && (need - have) / rate < best.t * 0.8)) {
-            if (rate > 0) return { kind: "wait", text: `Keep making ${MATS[s.open - 1].name}`, why: `${MATS[s.open].name} opens when you hold ${fmt(need)} ${MATS[s.open - 1].name}, about ${ago((need - have) / rate)}.`, mat: s.open, doable: false };
+            if (rate > 0) return { kind: "wait", text: `Keep making ${MATS[s.open - 1].name}`, why: `${MATS[s.open].name} opens when you hold ${fmt(need)} ${MATS[s.open - 1].name}, about ${ago((need - have) / rate)}.`, mat: s.open, doable: false, cost: { cur: s.open - 1, text: fmt(need) }, progress: Math.max(0, Math.min(1, have / need)) };
         }
     }
     if (best) {
         const m = MATS[best.n];
-        return { kind: "wait", text: `Next: ${best.k === 0 ? `a ${m.name} crew` : `${m.equip.toLowerCase()}`}`, why: `Affordable ${ago(best.t)}. The crews are making the material for it.`, mat: best.n, tier: best.k, doable: false };
+        const bc = tierCost(s, best.n, best.k, f);
+        const bHave = bc.cur === "cash" ? s.cash : s.amt[bc.mat];
+        return { kind: "wait", cost: { cur: bc.cur === "cash" ? "cash" : bc.mat, text: bc.cur === "cash" ? fmtCash(bc.amount) : fmt(bc.amount) }, progress: Math.max(0, Math.min(1, bHave / bc.amount)), text: `Next: ${best.k === 0 ? `a ${m.name} crew` : `${m.equip.toLowerCase()}`}`, why: `Affordable ${ago(best.t)}. The crews are making the material for it.`, mat: best.n, tier: best.k, doable: false };
     }
     const job = s.job ? JOB_BY.get(s.job.id) : null;
     return { kind: "wait", text: job ? `${job.name} is under way` : "The next job is starting", why: "Nothing to buy right now. The crews are working, and you can leave the tab open or come back later.", doable: false };

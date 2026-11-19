@@ -31,6 +31,11 @@ type Tier = 0 | 1 | 2;
 const fmtSecs = (sec: number) => { const s = Math.max(0, Math.ceil(sec)); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`; };
 type Win = null | "jobs" | "skyline" | "firm" | "console" | "menu";
 interface Note { id: number; text: string; tone?: "hot" | "dim"; sticky?: boolean }
+/** A short rising label (+1 crew, +$60) spawned over a tile or chip. Positions are in root pixels. */
+interface Float { id: number; x: number; y: number; text: string; tone: "buy" | "cash" }
+/** The big beat banner: a job handed over, a stage opened, a material on site. One at a time, 2.6 s. */
+interface Moment { key: number; kind: "job" | "stage" | "open"; kicker: string; title: string; sub?: string }
+const snapOf = (s: State) => ({ built: s.built, open: s.open, change: !!s.change, cashAll: s.cashAll });
 const TIER_ICON = ["crew", "equip", "method"] as const;
 /** The machine each material row buys at tier II, in material order. */
 const EQUIP_ICONS = ["loader", "excavator", "kiln", "mixer", "bender", "mill", "float", "drawer", "brake", "yard", "rig", "crane"];
@@ -51,7 +56,7 @@ function Banner({ id }: { id: GbBannerId }) {
 const TIER_KEY = ["Q", "W", "E"] as const;
 const MAT_KEYS = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "-", "="];
 /** Space the dock and cue take at the bottom: a tall two-row dock on portrait phones, one slim row on a phone held sideways. */
-const dockHeight = (r: { width: number; height: number }) => (r.height <= 520 ? 96 : r.width <= 860 ? 230 : 150);
+const dockFallback = (r: { width: number; height: number }) => (r.height <= 520 ? 96 : r.width <= 860 ? 230 : 150);
 const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
 
 /** One icon. Every icon the game uses is a cell of the shared sheet, so the first paint needs one image request, not one per icon. */
@@ -82,11 +87,11 @@ function useHeld<T>(value: T | null, ms = 120): { shown: T | null; state: "in" |
     return { shown: value ?? held, state: value !== null ? "in" : "out" };
 }
 
-function Window({ open, title, hint, variant, size = "md", onClose, children, icon, banner }: { open: boolean; title: string; hint?: string; variant: "iris" | "shutter" | "settle" | "drop" | "unroll" | "stamp"; size?: "sm" | "md" | "lg"; onClose: () => void; children: ReactNode; icon?: string; banner?: GbBannerId }) {
+function Window({ open, id, title, hint, variant, size = "md", onClose, children, icon, banner }: { open: boolean; id: string; title: string; hint?: string; variant: "iris" | "shutter" | "settle" | "drop" | "unroll" | "stamp"; size?: "sm" | "md" | "lg"; onClose: () => void; children: ReactNode; icon?: string; banner?: GbBannerId }) {
     const { mounted, state } = useExit(open);
     if (!mounted) return null;
     return (
-        <section className={`gb-win gb-${size}`} data-v={variant} data-s={state} role="dialog" aria-label={title} onPointerDown={(e) => e.stopPropagation()}>
+        <section className={`gb-win gb-${size}`} data-id={id} data-v={variant} data-s={state} role="dialog" aria-label={title} onPointerDown={(e) => e.stopPropagation()}>
             {banner && <Banner id={banner} />}
             <header className="gb-win-head">
                 {icon && <Ico id={icon} size={32} />}
@@ -121,6 +126,19 @@ export function Groundbreak() {
     const [perkPeek, setPerkPeek] = useState<string | null>(null);
     const lastStage = useRef(-1);
     useEffect(() => { if (win !== "firm") setPerkPeek(null); }, [win]);
+    // juice: rising labels, the dock tile that was just bought from, the beat banner, the cash chip flash, the Next move button's press
+    const [floats, setFloats] = useState<Float[]>([]);
+    const floatId = useRef(0);
+    const [popTile, setPopTile] = useState<{ key: number; mat: number } | null>(null);
+    const popId = useRef(0);
+    const [moment, setMoment] = useState<Moment | null>(null);
+    const momentId = useRef(0);
+    const [cashGain, setCashGain] = useState(0);
+    const [cuePress, setCuePress] = useState(0);
+    /** What the active job pays at handover, remembered each tick, because the job is gone by the time the handover is noticed. */
+    const worth = useRef({ pay: 0, rep: 0 });
+    /** Measured height of the dock plus the Next move button above it; the camera keeps the ground clear of both. */
+    const dockPx = useRef(0);
     const [away, setAway] = useState<AwaySummary | null>(null);
     const [conflict, setConflict] = useState(false);
     const conflictRef = useRef(false);
@@ -143,12 +161,34 @@ export function Groundbreak() {
     const [jobOpen, setJobOpen] = useState(true);
     const lastTick = useRef(0);
     const seen = useRef({ built: 0, open: 1, change: false, cashAll: 0 });
+    const dockHeight = useCallback((r: { width: number; height: number }) => (dockPx.current ? dockPx.current : dockFallback(r)), []);
     const shell = useGameShell();
 
     // a sticky note is a warning the player must be able to read (a broken save, storage blocked): later toasts do not push it out, and it stays 20 s
     const note = useCallback((text: string, tone?: Note["tone"], sticky = false) => {
         pushNote(text, tone, sticky);
     }, [pushNote]);
+    /** A label that rises from a tile or chip (the selector names it) and fades. Gone after a second. */
+    const spawnFloat = useCallback((target: string, text: string, tone: Float["tone"]) => {
+        const root = rootRef.current;
+        const el = root?.querySelector<HTMLElement>(target);
+        if (!root || !el || !text) return;
+        const rr = root.getBoundingClientRect(), er = el.getBoundingClientRect();
+        const id = ++floatId.current;
+        setFloats((f) => [...f.slice(-5), { id, x: er.left - rr.left + er.width / 2, y: er.top - rr.top + 4, text, tone }]);
+        window.setTimeout(() => setFloats((f) => f.filter((v) => v.id !== id)), 1000);
+    }, []);
+    /** The beat banner: a job handed over, a stage opened, a material on site. */
+    const showMoment = useCallback((m: Omit<Moment, "key">) => {
+        const key = ++momentId.current;
+        setMoment({ ...m, key });
+        window.setTimeout(() => setMoment((cur) => (cur && cur.key === key ? null : cur)), 2600);
+    }, []);
+    /** A purchase landed: the tile it belongs to pops and a label rises from it. */
+    const buyFx = useCallback((mat: number, tier: Tier) => {
+        setPopTile({ key: ++popId.current, mat });
+        spawnFloat(`.gb-tile[data-i="${mat}"]`, tier === 0 ? "+1 crew" : `x${tier === 1 ? TUNE.equipMult : TUNE.methodMult} output`, "buy");
+    }, [spawnFloat]);
     const save = useCallback(() => {
         const s = sRef.current;
         if (!s) return;
@@ -180,7 +220,7 @@ export function Groundbreak() {
         const n = { x: clamp(c.x, -40, WORLD_W + 40), y, z };
         camRef.current = n;
         setCam(n);
-    }, []);
+    }, [dockHeight]);
     /** Frame the site: the job (or the lot for the next job) fills about half the free view, so the crew and the staged building are the first thing seen. */
     const homeCam = useCallback((jobId?: string): Camera => {
         const r = viewRef.current?.getBoundingClientRect();
@@ -190,13 +230,13 @@ export function Groundbreak() {
         const art = jobId ? GB_JOBS[jobId as GbJobId] : undefined;
         if (!art) return { x: portrait ? 240 : 236, y: portrait ? 160 : 166, z: clamp(r.width / (cover * 250), ZOOM_MIN, 1) };
         const hw = art.h / 2 + 14, ww = art.w / 2 + 24;
-        const dockH = dockHeight(r), topH = 60;
+        const dockH = dockHeight(r), topH = r.width <= 860 ? 150 : 116;
         const free = Math.max(120, r.height - dockH - topH);
         const z = clamp(Math.min(free / (cover * hw), (r.width * 0.86) / (cover * ww)), 0.6, 3.2);
         // centre the building in the free band between the header and the dock
         const midShift = (dockH - topH) / 2 / (cover * z);
         return { x: 240, y: GROUND_Y - hw / 2 + 8 + midShift, z };
-    }, []);
+    }, [dockHeight]);
     const zoomAt = useCallback((factor: number, px?: number, py?: number) => {
         userCam.current = true; lastInput.current = Date.now();
         const r = viewRef.current?.getBoundingClientRect();
@@ -277,7 +317,7 @@ export function Groundbreak() {
         }
         s.savedAt = now;
         sRef.current = s;
-        seen.current = { built: s.built, open: s.open, change: !!s.change, cashAll: s.cashAll };
+        seen.current = snapOf(s);
         lastTick.current = now;
         setReduce(window.matchMedia("(prefers-reduced-motion: reduce)").matches);
         if (window.innerWidth <= 860) setJobOpen(false);
@@ -303,8 +343,15 @@ export function Groundbreak() {
             const sn = seen.current;
             if (s.built > sn.built) {
                 const last = s.skyline[s.skyline.length - 1];
-                note(`${JOB_BY.get(last?.id ?? "")?.name ?? "Job"} handed over.`, "hot");
+                const w = worth.current;
+                showMoment({ kind: "job", kicker: "Handed over", title: JOB_BY.get(last?.id ?? "")?.name ?? "Job", sub: w.pay > 0 ? `+${fmtCash(w.pay)} and +${fmt(w.rep)} rep` : undefined });
+                if (w.pay > 0) spawnFloat(".gb-res li:first-child", `+${fmtCash(w.pay)}`, "cash");
+                setCashGain((n) => n + 1);
                 setFreshTick(s.builtThisFirm - 1);
+            }
+            if (s.job && !s.job.rerun) {
+                const jd = JOB_BY.get(s.job.id), fx = effects(s);
+                if (jd) worth.current = { pay: payout(s, jd, fx, chain(s), s.job.index) * (1 + s.job.bonus), rep: repPay(s, jd, fx) };
             }
             if (seenRe.current < 0 || s.reruns < seenRe.current) seenRe.current = s.reruns;
             if (s.reruns > seenRe.current) {
@@ -318,13 +365,13 @@ export function Groundbreak() {
                 if (jd) note(`${jd.name} started at ${cityOf(s.firm).sites[jd.stage - 1]}.`, "hot");
             }
             lastJob.current = jid;
-            if (s.open > sn.open) { note(`${MATS[s.open - 1].name} is on site.`, "hot"); setPulse({ key: ++pulseId.current, mat: s.open - 1 }); }
+            if (s.open > sn.open) { showMoment({ kind: "open", kicker: "On site", title: MATS[s.open - 1].name, sub: "Hire crews on it from the dock." }); setPulse({ key: ++pulseId.current, mat: s.open - 1 }); }
             // a new stage: the pip stamps and the feed names it (the first read only records the stage, it does not announce it)
             const stNow = stageOf(s);
-            if (lastStage.current > 0 && stNow > lastStage.current) { note(`Stage ${stNow}: ${STAGES[stNow - 1]?.name ?? "new crew"} on the job.`, "hot"); setFreshStage(stNow); }
+            if (lastStage.current > 0 && stNow > lastStage.current) { showMoment({ kind: "stage", kicker: `Stage ${stNow}`, title: STAGES[stNow - 1]?.name ?? "New crew", sub: "A new crew is on the job." }); setFreshStage(stNow); }
             lastStage.current = stNow;
             if (s.change && !sn.change) note("Change order: the client wants more.", "hot");
-            seen.current = { built: s.built, open: s.open, change: !!s.change, cashAll: s.cashAll };
+            seen.current = snapOf(s);
         }, 100);
         const ui = window.setInterval(bump, 250);
         // another tab saved newer progress: stop saving here so it cannot be overwritten (the game kit's watcher)
@@ -337,13 +384,13 @@ export function Groundbreak() {
         const onLive = (e: Event) => { (e as CustomEvent).detail.live = { s: sRef.current, changed: () => { bump(); save(); } }; };
         window.addEventListener("gb:live", onLive);
         return () => { clearInterval(tick); clearInterval(ui); clearInterval(follow); offNewer(); window.removeEventListener("gb:live", onLive); };
-    }, [ready, bump, save, note, setCamera, homeCam]);
+    }, [ready, bump, save, note, setCamera, homeCam, showMoment, spawnFloat]);
     // Saves every 8 s, on tab hide, on leaving and on unmount (the game kit's loop; save() writes through lib/saves).
     useAutosave(save, { enabled: ready });
 
     // ---- actions -----------------------------------------------------------------------------------------------------------
     const act = useCallback((fn: (s: State) => unknown) => { const s = sRef.current; if (s) { fn(s); bump(); } }, [bump]);
-    const doBuy = useCallback((i: number, t: Tier) => act((s) => { if (buy(s, i, t)) save(); }), [act, save]);
+    const doBuy = useCallback((i: number, t: Tier) => act((s) => { if (buy(s, i, t)) { save(); buyFx(i, t); } }), [act, save, buyFx]);
     const doCueNow = useCallback(() => {
         const s = sRef.current;
         if (!s) return;
@@ -351,8 +398,12 @@ export function Groundbreak() {
         if (!c.doable) { if (c.mat !== undefined && c.mat < s.open) { setWin(null); setSel(c.mat); } else if (c.kind === "wait") note(c.why); return; }
         if (c.kind === "perk" || c.kind === "incorporate") { setSel(null); setWin("firm"); if (c.kind === "perk") { const d = doCue(s, c); if (d) { save(); note(d, "hot"); bump(); } } return; }
         const d = doCue(s, c);
-        if (d) { save(); note(d, "hot"); if (c.mat !== undefined && c.kind === "buy") setSel(c.mat); bump(); }
-    }, [bump, note, save]);
+        if (d) {
+            save(); bump(); setCuePress((n) => n + 1);
+            // a buy keeps its tile and label as the confirmation; the other cues keep their one-line toast
+            if (c.kind === "buy" && c.mat !== undefined && c.tier !== undefined) buyFx(c.mat, c.tier); else note(d, "hot");
+        }
+    }, [bump, note, save, buyFx]);
     const doUnlock = useCallback(() => act((s) => { if (unlock(s, s.open)) save(); }), [act, save]);
     const doIncorporate = useCallback(() => act((s) => { const g = incorporate(s); if (g > 0) { setWin(null); setSel(null); note(`A new firm opens in ${cityOf(s.firm).name}. +${g} charter.`, "hot"); save(); } }), [act, note, save]);
     const togglePause = useCallback(() => { manualPause.current = !manualPause.current; setPaused(manualPause.current); shell.setPaused(manualPause.current); }, [shell]);
@@ -425,18 +476,27 @@ export function Groundbreak() {
         const measure = () => {
             const rr = root.getBoundingClientRect(), dr = dock.getBoundingClientRect();
             root.style.setProperty("--gb-dock-top", `${Math.ceil(rr.bottom - dr.top)}px`);
+            // the camera keeps the ground clear of the dock and the Next move button above it
+            const room = Math.ceil(rr.bottom - dr.top) + (rr.height <= 520 ? 0 : rr.width <= 860 ? 76 : 100);
+            if (room !== dockPx.current) {
+                dockPx.current = room;
+                const sn = sRef.current;
+                if (sn && !userCam.current) setCamera(homeCam(sn.job?.id ?? nextJob(sn).id));
+            }
             // The job card runs down to the dock, or to the cue or zoom buttons beside it. Its body scrolls past that.
             const job = root.querySelector<HTMLElement>(".gb-job");
             if (job) {
                 const jr = job.getBoundingClientRect();
                 let bottom = dr.top - 10;
-                for (const sel of [".gb-cue", ".gb-zoom"]) {
+                for (const sel of [".gb-cue"]) {
                     const e = root.querySelector<HTMLElement>(sel);
                     if (!e) continue;
                     const er = e.getBoundingClientRect();
                     if (er.width && er.height && er.right > jr.left && er.left < jr.right && er.top > jr.top) bottom = Math.min(bottom, er.top - 8);
                 }
                 root.style.setProperty("--gb-job-room", `${Math.max(56, Math.floor(bottom - jr.top))}px`);
+                // toasts stack under the job card, in the same column
+                root.style.setProperty("--gb-feed-top", `${Math.ceil(jr.bottom - rr.top + 8)}px`);
             }
         };
         measureRef.current = measure;
@@ -444,13 +504,32 @@ export function Groundbreak() {
         const ro = new ResizeObserver(measure);
         ro.observe(dock); ro.observe(root);
         return () => ro.disconnect();
-    }, [ready]);
+    }, [ready, setCamera, homeCam]);
     // the cue and job card change height with the game, so re-measure after every render
     useEffect(() => { measureRef.current(); });
 
     // Held for the exit animations. These sit above the boot return so the hook order never changes.
     const cardH = useHeld(sel, 120);
     const awayH = useHeld(away, 120);
+    // on desktop the material card hangs above its own tile: measure the tile and park the card and its notch over it
+    const cardMat = cardH.shown;
+    useEffect(() => {
+        const root = rootRef.current;
+        if (!root || cardMat === null) return;
+        const place = () => {
+            const tile = root.querySelector<HTMLElement>(`.gb-tile[data-i="${cardMat}"]`);
+            const card = root.querySelector<HTMLElement>(".gb-card");
+            if (!tile || !card) return;
+            const rr = root.getBoundingClientRect(), tr = tile.getBoundingClientRect(), cw = card.getBoundingClientRect().width;
+            const cx = tr.left - rr.left + tr.width / 2;
+            const left = clamp(cx - cw / 2, 8, Math.max(8, rr.width - cw - 8));
+            root.style.setProperty("--gb-card-left", `${Math.round(left)}px`);
+            root.style.setProperty("--gb-card-notch", `${Math.round(cx - left)}px`);
+        };
+        place();
+        window.addEventListener("resize", place);
+        return () => window.removeEventListener("resize", place);
+    }, [cardMat]);
     if (!ready || !s || !f) return <div className="gb-root gb-boot" aria-busy="true"><p>Staking out the site…</p></div>;
 
     const stage = stageOf(s);
@@ -467,9 +546,25 @@ export function Groundbreak() {
     };
     const ovt = overtimeCost(s);
     const cue = nextCue(s);
+    // what the active build phase is short of right now: the material that will take longest to arrive
+    let held: { mat: number; phase: string } | null = null;
+    let buildPhase = "";
+    if (def && aj && f && aj.step === "build") {
+        const ph = plan(def, f)[aj.phase];
+        if (ph) {
+            buildPhase = ph.name;
+            let eta = 0;
+            for (const [m, q] of phaseNeeds(aj, ph)) {
+                const short = q - aj.got[m] - s.amt[m];
+                if (short <= 1e-9) continue;
+                const e = short / Math.max(1e-9, rawRate(s, m, f, chain(s)));
+                if (e > eta) { eta = e; held = { mat: m, phase: ph.name }; }
+            }
+        }
+    }
 
     return (
-        <div ref={rootRef} className="gb-root" data-paused={paused || shell.paused ? "true" : undefined} data-simple={simple ? "true" : undefined} data-reduce={reduce ? "true" : undefined} data-win={win ?? undefined}>
+        <div ref={rootRef} className="gb-root" data-paused={paused || shell.paused ? "true" : undefined} data-simple={simple ? "true" : undefined} data-reduce={reduce ? "true" : undefined} data-win={win ?? undefined} data-card={card !== null ? "" : undefined}>
             <div ref={viewRef} className="gb-view" onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp} aria-label="Building site. Scroll to zoom, drag to pan.">
                 <GroundbreakScene camera={cam} job={sceneJob} skyline={skyline} craneLevel={s.equip[11] ?? 0} idle={aj ? null : nextJob(s).id} crews={crewTotal} reduce={reduce || simple} paused={paused || shell.paused} />
             </div>
@@ -493,25 +588,26 @@ export function Groundbreak() {
                     </div>
                 </div>
                 <ul className="gb-res" aria-label="Resources">
-                    <li data-tip="Cash. Jobs pay it; methods cost it."><Ico id="cash" size={22} /><b><Ticked value={s.cash} format={fmtCash} /></b></li>
+                    <li key={`cash${cashGain}`} data-gain={cashGain ? "" : undefined} data-tip="Cash. Jobs pay it; methods cost it."><Ico id="cash" size={22} /><b><Ticked value={s.cash} format={fmtCash} /></b></li>
                     <li data-tip="Reputation. It lifts all output and inspections."><Ico id="rep" size={22} /><b>{fmt(s.rep)}</b></li>
                     <li data-tip="Crews hired"><Ico id="crew" size={22} /><b>{crewTotal}</b></li>
                 </ul>
             </header>
 
-            <nav className="gb-rail" aria-label="Menus" onPointerDown={(e) => e.stopPropagation()}>
-                {([["jobs", "bid", "Jobs", "J"], ["skyline", "skyline", "Skyline", "K"], ["firm", "firm", "Firm", "F"], ["console", "console", "Console", "C"], ["menu", "menu", "Menu", "M"]] as const).map(([id, ic, label, key]) => (
-                    <button key={id} type="button" className="gb-rail-btn" aria-pressed={win === id} aria-label={label} data-tip={`${label} · ${key}`} data-ping={id === "firm" && (canIncorporate(s, f) || PERKS.some((p) => perkReady(s.perks, p) && s.charter >= p.cost)) ? "" : id === "jobs" && wait ? "" : undefined} onClick={() => { setSel(null); setWin(win === id ? null : id); }}>
-                        <Ico id={ic} size={36} /><kbd>{key}</kbd>
-                    </button>
-                ))}
+            <nav className="gb-tools" aria-label="Menus and view" onPointerDown={(e) => e.stopPropagation()}>
+                <div className="gb-rail" role="group" aria-label="Menus">
+                    {([["jobs", "bid", "Jobs", "J"], ["skyline", "skyline", "Skyline", "K"], ["firm", "firm", "Firm", "F"], ["console", "console", "Console", "C"], ["menu", "menu", "Menu", "M"]] as const).map(([id, ic, label, key]) => (
+                        <button key={id} type="button" className="gb-rail-btn" aria-pressed={win === id} aria-label={label} data-tip={`${label} · ${key}`} data-ping={id === "firm" && (canIncorporate(s, f) || PERKS.some((p) => perkReady(s.perks, p) && s.charter >= p.cost)) ? "" : id === "jobs" && wait ? "" : undefined} onClick={() => { setSel(null); setWin(win === id ? null : id); }}>
+                            <Ico id={ic} size={28} /><span>{label}</span><kbd>{key}</kbd>
+                        </button>
+                    ))}
+                </div>
+                <div className="gb-zoom" role="group" aria-label="View">
+                    <button type="button" className="gb-zoom-in" onClick={() => zoomAt(1.3)} aria-label="Zoom in" data-tip="Zoom in · +"><Ico id="zoomin" size={26} /></button>
+                    <button type="button" className="gb-zoom-out" onClick={() => zoomAt(0.77)} aria-label="Zoom out" data-tip="Zoom out · Shift -"><Ico id="zoomout" size={26} /></button>
+                    <button type="button" onClick={reset} aria-label="Reset view" data-tip="Reset view · R"><Ico id="reset" size={26} /></button>
+                </div>
             </nav>
-
-            <div className="gb-zoom" role="group" aria-label="View" onPointerDown={(e) => e.stopPropagation()}>
-                <button type="button" onClick={() => zoomAt(1.3)} aria-label="Zoom in" data-tip="Zoom in · +"><Ico id="zoomin" size={26} /></button>
-                <button type="button" onClick={() => zoomAt(0.77)} aria-label="Zoom out" data-tip="Zoom out · Shift -"><Ico id="zoomout" size={26} /></button>
-                <button type="button" onClick={reset} aria-label="Reset view" data-tip="Reset view · R"><Ico id="reset" size={26} /></button>
-            </div>
 
             <aside className={`gb-job ${jobOpen ? "" : "is-min"}`} onPointerDown={(e) => e.stopPropagation()}>
                 {jobOpen && <Banner id="current" />}
@@ -519,6 +615,7 @@ export function Groundbreak() {
                     <Ico id="bid" size={28} /><span>{def ? def.name : nextJob(s).name}{s.job?.rerun && <small className="gb-rerun">Repeat order</small>}</span>
                     {aj && <em>{aj.step === "permit" ? `permit ${fmtSecs(aj.left)}` : aj.step === "inspect" ? `inspection ${fmtSecs(aj.left)}` : `${Math.floor(prog * 100)}%`}</em>}
                 </button>
+                {aj && <i className="gb-job-mini" aria-hidden="true"><b style={{ width: `${Math.floor(prog * 100)}%` }} /></i>}
                 {jobOpen && (def && aj && f ? (
                     <div className="gb-job-body">
                         <ol className="gb-phases">
@@ -536,6 +633,10 @@ export function Groundbreak() {
                                 );
                             })}
                         </ol>
+                        <p className="gb-job-now" data-held={held ? "" : undefined}>
+                            {held ? <Ico id={MAT_ICONS[held.mat]} size={20} /> : <Ico id={aj.step === "build" ? "crew" : aj.step === "inspect" ? "inspection" : "permit"} size={20} />}
+                            <span>{aj.step === "permit" ? "Permit filed. The crew moves in." : aj.step === "inspect" ? "Inspection under way." : held ? <><b>{held.phase}</b> is waiting on {MATS[held.mat].name}.</> : <><b>{buildPhase}</b> is under way.</>}</span>
+                        </p>
                         <p className="gb-job-pay">{aj.rerun ? `repeat order: pays ${fmtCash(repeatPay(s, def, f))} + ${repeatRep(s, def, f)} rep, no new building` : `pays ${fmtCash(payout(s, def, f, chain(s), aj.index) * (1 + aj.bonus))} + ${repPay(s, def, f)} rep`}</p>
                         {aj.step === "inspect" && ovt > 0 && <button type="button" className="gb-go" disabled={s.cash < ovt} onClick={() => act((x) => overtime(x))} data-tip="Pay to finish the inspection now">Overtime {fmtCash(ovt)}</button>}
                     </div>
@@ -562,7 +663,15 @@ export function Groundbreak() {
             </aside>
 
             <ul className="gb-feed" aria-live="polite">{notes.map((n) => <li key={n.id} data-tone={n.tone}><Ico id={n.tone === "hot" ? "rep" : "bid"} size={28} /><span>{n.text}</span><i className="gb-cn" data-c="tl" /><i className="gb-cn" data-c="br" /></li>)}</ul>
-            <CueChip cue={cue} onGo={doCueNow} />
+            <CueChip cue={cue} onGo={doCueNow} press={cuePress} />
+            <div className="gb-fx" aria-hidden="true">{floats.map((fl) => <i key={fl.id} className="gb-float" data-tone={fl.tone} style={{ left: fl.x, top: fl.y }}>{fl.text}</i>)}</div>
+            {moment && (
+                <div key={moment.key} className="gb-moment" data-kind={moment.kind} role="status">
+                    <Ico id={moment.kind === "job" ? "skyline" : moment.kind === "stage" ? "crew" : MAT_ICONS[s.open - 1] ?? "crew"} size={48} />
+                    <p><small>{moment.kicker}</small><strong>{moment.title}</strong>{moment.sub && <span>{moment.sub}</span>}</p>
+                    <i className="gb-cn" data-c="tl" /><i className="gb-cn" data-c="tr" /><i className="gb-cn" data-c="bl" /><i className="gb-cn" data-c="br" />
+                </div>
+            )}
             {conflict && (
                 <div className="gb-conflict" role="alert" onPointerDown={(e) => e.stopPropagation()}>
                     <p>Groundbreak is open in another tab, and that tab saved newer progress. Saving is paused here so it cannot overwrite it.</p>
@@ -586,8 +695,9 @@ export function Groundbreak() {
                                 const r = open ? rawRate(s, i, f, chain(s)) : 0;
                                 const need = next ? UNLOCK[i] : 0;
                                 const pct = next ? Math.min(100, Math.floor((s.amt[i - 1] / need) * 100)) : 0;
+                                const can = open && ([0, 1, 2] as Tier[]).some((t) => canBuy(s, i, t, f));
                                 return (
-                                    <button key={m.id} type="button" className="gb-tile" data-hint={cue.mat === i && cue.kind !== "perk" ? "" : undefined} data-state={open ? "open" : next ? "next" : "locked"} data-on={card === i ? "" : undefined} data-ready={next && canUnlock(s, i) ? "" : undefined}
+                                    <button key={m.id} type="button" className="gb-tile" data-i={i} data-can={can ? "" : undefined} data-hint={cue.mat === i && cue.kind !== "perk" ? "" : undefined} data-state={open ? "open" : next ? "next" : "locked"} data-on={card === i ? "" : undefined} data-ready={next && canUnlock(s, i) ? "" : undefined}
                                         aria-pressed={card === i} aria-label={`${m.name}${open ? `, ${fmt(s.amt[i])}` : ", locked"}`}
                                         data-tip={open ? `${m.name} · ${fmt(r)}/s` : next ? `${m.name} · needs ${fmt(need)} ${MATS[i - 1].name}` : `${m.name} · locked`}
                                         style={next ? ({ ["--pct" as string]: `${pct}%` } as CSSProperties) : undefined}
@@ -598,7 +708,9 @@ export function Groundbreak() {
                                         {open && <i className="gb-lv">{s.crews[i]}</i>}
                                         {!open && !next && <em className="gb-tile-name">{m.name}</em>}
                                         {!open && !next && <Ico id="lock" size={16} className="gb-tile-lock" />}
+                                        {can && <i className="gb-can" aria-hidden="true" />}
                                         {pulse?.mat === i && <i key={pulse.key} className="gb-unlock" aria-hidden="true" />}
+                                        {popTile?.mat === i && <i key={popTile.key} className="gb-pop" aria-hidden="true" />}
                                     </button>
                                 );
                             })}
@@ -607,7 +719,7 @@ export function Groundbreak() {
                 ))}
             </div>
 
-            <Window open={win === "jobs"} title="Next jobs" hint={`${s.builtThisFirm} of ${JOBS.length} built`} variant="unroll" icon="bid" banner="jobs" onClose={() => setWin(null)}>
+            <Window open={win === "jobs"} id="jobs" title="Next jobs" hint={`${s.builtThisFirm} of ${JOBS.length} built`} variant="unroll" icon="bid" banner="jobs" onClose={() => setWin(null)}>
                 <p className="gb-line">{city.name}. {city.blurb}</p>
                 <ul className="gb-bids">
                     {s.job && def && <li className="is-now"><JobThumb id={def.id} /><div><strong>{def.name}</strong><span>{jobPhaseName(s.job, f)} · {s.job.rerun ? "Repeat order, no new building" : city.sites[def.stage - 1]}</span></div>{s.job.rerun && <dl><dt>pays</dt><dd>{fmtCash(repeatPay(s, def, f))}</dd><dt>rep</dt><dd>+{repeatRep(s, def, f)}</dd></dl>}<span className="gb-req">{Math.floor(prog * 100)}%</span></li>}
@@ -622,11 +734,11 @@ export function Groundbreak() {
                 {wait && <p className="gb-line">{wait}.</p>}
             </Window>
 
-            <Window open={win === "skyline"} title="Skyline" hint={`${s.skyline.length} built`} variant="iris" size="lg" icon="skyline" banner="skyline" onClose={() => setWin(null)}>
+            <Window open={win === "skyline"} id="skyline" title="Skyline" hint={`${s.skyline.length} built`} variant="iris" size="lg" icon="skyline" banner="skyline" onClose={() => setWin(null)}>
                 <SkylineView skyline={s.skyline} />
             </Window>
 
-            <Window open={win === "firm"} title="Firm" hint={`${city.name} · firm ${s.firm + 1}`} variant="stamp" size="lg" icon="firm" banner="firm" onClose={() => setWin(null)}>
+            <Window open={win === "firm"} id="firm" title="Firm" hint={`${city.name} · firm ${s.firm + 1}`} variant="stamp" size="lg" icon="firm" banner="firm" onClose={() => setWin(null)}>
                 <div className="gb-firm-side">
                 <dl className="gb-stats">
                     <dt>Reputation this firm</dt><dd>{fmt(s.repFirm)}</dd>
@@ -644,28 +756,46 @@ export function Groundbreak() {
                 <PerkGrid s={s} justBought={freshPerk} peek={perkPeek} onPeek={setPerkPeek} onBuy={(id) => act((x) => { if (buyPerk(x, id)) { save(); setFreshPerk(id); setPerkPeek(null); note(`${PERKS.find((p) => p.id === id)?.name ?? "Perk"} bought.`, "hot"); } })} onAuto={(n) => act((x) => { x.autoOff = x.autoOff.includes(n) ? x.autoOff.filter((v) => v !== n) : [...x.autoOff, n]; save(); })} />
             </Window>
 
-            <Window open={win === "console"} title="Console" hint="gb help" variant="drop" icon="console" banner="console" size="md" onClose={() => setWin(null)}>
+            <Window open={win === "console"} id="console" title="Console" hint="gb help" variant="drop" icon="console" banner="console" size="md" onClose={() => setWin(null)}>
                 <Console run={doCommand} />
             </Window>
 
-            <Window open={win === "menu"} title="Menu" variant="settle" size="sm" icon="menu" banner="menu" onClose={() => setWin(null)}>
+            <Window open={win === "menu"} id="menu" title="Menu" variant="settle" size="sm" icon="menu" banner="menu" onClose={() => setWin(null)}>
                 <MenuBody s={s} paused={paused} onPause={togglePause} simple={simple} onSimple={toggleSimple} fs={shell.supportsFullscreen} onFs={shell.toggleFullscreen} fsOn={shell.fullscreen}
-                    onImport={(st) => { const p = reviveAuto(GROUNDBREAK_SAVE, st); if (!p) { note("That save could not be read."); return; } if (sRef.current) writeStored(window.localStorage, SAVE_KEY + "-backup", encodeSave(GROUNDBREAK_SAVE, sRef.current)); sRef.current = p; seen.current = { built: p.built, open: p.open, change: !!p.change, cashAll: p.cashAll }; seenRe.current = p.reruns; save(); bump(); note("Save imported. The old one is kept as a backup.", "hot"); }}
-                    onWipe={() => { if (sRef.current) writeStored(window.localStorage, SAVE_KEY + "-backup", encodeSave(GROUNDBREAK_SAVE, sRef.current)); sRef.current = fresh(Date.now()); seen.current = { built: 0, open: 1, change: false, cashAll: 0 }; seenRe.current = -1; save(); setWin(null); setSel(null); bump(); }} onNote={note}
-                    onRestore={(raw) => { const p = reviveText(GROUNDBREAK_SAVE, raw); if (!p) { note("That backup could not be read."); return; } if (sRef.current) writeStored(window.localStorage, SAVE_KEY + "-backup", encodeSave(GROUNDBREAK_SAVE, sRef.current)); sRef.current = p; seen.current = { built: p.built, open: p.open, change: !!p.change, cashAll: p.cashAll }; seenRe.current = p.reruns; save(); setWin(null); bump(); note("Backup restored. The save you replaced is kept as the manual backup.", "hot"); }} />
+                    onImport={(st) => { const p = reviveAuto(GROUNDBREAK_SAVE, st); if (!p) { note("That save could not be read."); return; } if (sRef.current) writeStored(window.localStorage, SAVE_KEY + "-backup", encodeSave(GROUNDBREAK_SAVE, sRef.current)); sRef.current = p; seen.current = snapOf(p); seenRe.current = p.reruns; save(); bump(); note("Save imported. The old one is kept as a backup.", "hot"); }}
+                    onWipe={() => { if (sRef.current) writeStored(window.localStorage, SAVE_KEY + "-backup", encodeSave(GROUNDBREAK_SAVE, sRef.current)); sRef.current = fresh(Date.now()); seen.current = snapOf(sRef.current); seenRe.current = -1; save(); setWin(null); setSel(null); bump(); }} onNote={note}
+                    onRestore={(raw) => { const p = reviveText(GROUNDBREAK_SAVE, raw); if (!p) { note("That backup could not be read."); return; } if (sRef.current) writeStored(window.localStorage, SAVE_KEY + "-backup", encodeSave(GROUNDBREAK_SAVE, sRef.current)); sRef.current = p; seen.current = snapOf(p); seenRe.current = p.reruns; save(); setWin(null); bump(); note("Backup restored. The save you replaced is kept as the manual backup.", "hot"); }} />
             </Window>
         </div>
     );
 }
 
 
-function CueChip({ cue, onGo }: { cue: Cue; onGo: () => void }) {
+/** The icon the Next move button wears: the crew, machine or method it buys, the material it opens, or the perk it spends on. */
+function cueIcon(cue: Cue): string {
+    if (cue.kind === "buy" && cue.mat !== undefined) return cue.tier === 0 ? "crew" : cue.tier === 1 ? EQUIP_ICONS[cue.mat] : "method";
+    if (cue.kind === "perk" && cue.perk) return `perk_${cue.perk}`;
+    if (cue.kind === "accept") return "permit";
+    if (cue.kind === "incorporate") return "firm";
+    if (cue.mat !== undefined) return MAT_ICONS[cue.mat];
+    return "inspection";
+}
+
+/** The one thing to do next, as a big key at the bottom centre. Press it (or Space) and the game does it; while it waits it fills toward what it is waiting for. */
+function CueChip({ cue, onGo, press }: { cue: Cue; onGo: () => void; press: number }) {
+    const pct = cue.progress !== undefined ? Math.round(cue.progress * 100) : null;
     return (
         <div className="gb-cue" data-kind={cue.kind} data-doable={cue.doable ? "" : undefined} onPointerDown={(e) => e.stopPropagation()}>
-            <button type="button" onClick={onGo} data-tip={cue.doable ? "Do it · Space" : "Look at it · Space"}>
-                <span className="gb-cue-k">{cue.doable ? "Next" : "Wait"}</span>
-                <strong>{cue.text}</strong>
+            <button type="button" onClick={onGo}>
+                <i className="gb-cue-ico"><Ico id={cueIcon(cue)} size={40} /></i>
+                <span className="gb-cue-main">
+                    <small className="gb-cue-k">{cue.doable ? "Next move" : "Coming up"}</small>
+                    <strong>{cue.doable ? cue.text : cue.text.replace(/^Next: (.)/, (_, c: string) => c.toUpperCase())}</strong>
+                </span>
+                {cue.cost && <b className="gb-cue-cost"><Ico id={cue.cost.cur === "cash" ? "cash" : MAT_ICONS[cue.cost.cur]} size={20} />{cue.cost.text}</b>}
                 <kbd>Space</kbd>
+                {pct !== null && !cue.doable && <i className="gb-cue-bar" aria-hidden="true"><b style={{ width: `${pct}%` }} /></i>}
+                {press > 0 && <i key={press} className="gb-cue-hit" aria-hidden="true" />}
             </button>
             <p>{cue.why}</p>
         </div>
