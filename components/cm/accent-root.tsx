@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { usePathname } from "next/navigation";
 import { ACCENT_KEY, accentForNow, isAccentMode, type Accent, type AccentMode } from "@/lib/accent";
+import { sectionForPath } from "@/lib/section-accent";
 import "./accent-root.css";
 
 /** Fired on window to pin a mode ("auto" or one accent). Detail: { mode }. */
@@ -35,6 +37,15 @@ function writeStored(mode: AccentMode) {
  */
 export function AccentRoot() {
     const sweepRef = useRef<HTMLDivElement>(null);
+    const path = usePathname();
+
+    // Section colour: a plain attribute, so the CSS eases it like the time accent. No sweep for a section change.
+    useEffect(() => {
+        const sec = sectionForPath(path);
+        if (sec) document.documentElement.setAttribute("data-section", sec);
+        else document.documentElement.removeAttribute("data-section");
+    }, [path]);
+
     const modeRef = useRef<AccentMode>("auto");
     const shownRef = useRef<Accent | null>(null);
     const previewRef = useRef<Accent | null>(null);

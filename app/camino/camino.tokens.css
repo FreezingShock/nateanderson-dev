@@ -137,14 +137,34 @@
 @property --cm-cyan-ink  { syntax: "<color>"; inherits: true; initial-value: #031417; }
 @property --cm-cyan-deep { syntax: "<color>"; inherits: true; initial-value: #0b5a62; }
 @property --cm-cyan-wash { syntax: "<color>"; inherits: true; initial-value: rgba(47, 216, 232, .12); }
+@property --sec { syntax: "<color>"; inherits: true; initial-value: #2fd8e8; }
 
 :root {
   --cm-d-accent: 1.1s;   /* a band change or a pick: colour eases across the site */
   transition: --cm-cyan var(--cm-d-accent) var(--cm-ease), --cm-cyan-ink var(--cm-d-accent) var(--cm-ease),
-              --cm-cyan-deep var(--cm-d-accent) var(--cm-ease), --cm-cyan-wash var(--cm-d-accent) var(--cm-ease);
+              --cm-cyan-deep var(--cm-d-accent) var(--cm-ease), --cm-cyan-wash var(--cm-d-accent) var(--cm-ease),
+              --sec var(--cm-d-accent) var(--cm-ease);
 }
 :root[data-accent="amber"]  { --cm-cyan: #f2c94c; --cm-cyan-ink: #1a1404; --cm-cyan-deep: #6b5510; --cm-cyan-wash: rgba(242, 201, 76, .12); }
 :root[data-accent="violet"] { --cm-cyan: #a58bff; --cm-cyan-ink: #0d0a24; --cm-cyan-deep: #3d2f7a; --cm-cyan-wash: rgba(165, 139, 255, .14); }
+/* ---- Section accent (lib/section-accent.ts). html[data-section] picks one fixed colour per division; --sec is that
+        colour, or the time accent on the home page and on game routes (no section). Chrome that marks a division
+        (eyebrow, title underline, card and panel hover edges) reads --sec. The art and the shared chrome stay on the
+        time accent. ---------------------------------------------------------------------------------------------- */
+
+:root { --sec: var(--cm-accent); }
+:root[data-section="creations"] { --sec: #ff2d8a; }
+:root[data-section="studies"]   { --sec: #3ce07a; }
+:root[data-section="timeline"]  { --sec: #ff7a1a; }
+:root[data-section="blog"]      { --sec: #d8e86a; }
+:root[data-section="history"]   { --sec: #d44fd0; }
+:root[data-section="about"]     { --sec: #7fb4ff; }
+:root[data-theme="paper"][data-section="studies"]  { --sec: #13803f; }
+:root[data-theme="paper"][data-section="timeline"] { --sec: #c95400; }
+:root[data-theme="paper"][data-section="blog"]     { --sec: #6e7f12; }
+:root[data-theme="paper"][data-section="history"]  { --sec: #a02d9c; }
+:root[data-theme="paper"][data-section="about"]    { --sec: #2f6fd1; }
+
 /* Paper theme (light beats): darker tones for contrast on white. */
 :root[data-theme="paper"][data-accent="amber"]  { --cm-cyan: #9a7410; --cm-cyan-ink: #ffffff; --cm-cyan-deep: #f7efd2; --cm-cyan-wash: rgba(154, 116, 16, .1); }
 :root[data-theme="paper"][data-accent="violet"] { --cm-cyan: #6f55d8; --cm-cyan-ink: #ffffff; --cm-cyan-deep: #ece8ff; --cm-cyan-wash: rgba(111, 85, 216, .1); }

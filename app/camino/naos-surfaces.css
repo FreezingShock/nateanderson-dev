@@ -15,7 +15,7 @@
   /* Ground for chips, legends and strips that used to be see-through. */
   --cm-ctos-plate: rgba(19, 19, 19, .94);
   --cm-ctos-edge: rgba(226, 238, 240, .30);
-  --cm-ctos-edge-live: color-mix(in srgb, var(--cm-cyan) 70%, transparent);
+  --cm-ctos-edge-live: color-mix(in srgb, var(--sec, var(--cm-cyan)) 70%, transparent);   /* hover edge: the division's colour */
 }
 
 /* ---- 1. Panels, cards, strips: rest ------------------------------------------------------------------------------ */
@@ -101,3 +101,8 @@
   .ctos .cm-grid, .ctos .cm-cols3 { gap: 10px; }
 }
 .ctos .cm-grid.cm-fit > .cm-card .cm-viz { aspect-ratio: 21 / 9; }
+
+/* ---- Section accent (lib/section-accent.ts): each division marks its title block with its own colour. The eyebrow
+   label takes it, and a short rule runs under the title block. Home and game routes fall back to the time accent. */
+.ctos .cm-head .cm-lbl { color: var(--sec); }
+.ctos .cm-head h1 .cm-highlight { box-shadow: 0 5px 0 0 var(--sec); }
