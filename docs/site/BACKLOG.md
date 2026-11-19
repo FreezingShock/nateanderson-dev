@@ -10,6 +10,9 @@ Format and rules: `docs/WORKFLOW.md`. Append new items at the end of a section; 
 - [ ] SITE-studies-mobile | M | Studies is 9,400 px at 390 (classes 2,398, reading 1,083, pathway 1,280); same short-card treatment
 - [ ] SITE-creations-detail | M | hero image, short build story, stack and role block, screenshots on each detail page | audit 2 | needs Nate's facts, see below
 - [x] SITE-speed-transitions | S | route loading card now centred on the viewport (its 450 ms delay never applied: `.ctos .sys-load` did not match the element); nav and game routes warmed when idle (game routes skipped on save-data or 2g/3g); game launch cover 420 to 260 ms | this PR
+- [x] SITE-games-fill-screen | S | game panels fill more of the screen on every game: desktop anchors on the panel title bar (the Play heading scrolls up), frame is 100dvh - 244px, Groundbreak 100dvh - 190px; phones anchor on the title bar and the frame is 100dvh - 300px so the footer clears the tab bar | this PR
+- [x] SITE-launch-progress | S | game launch cover progress is three real steps (request, route, ready) on a segmented track with a live percent, a scan while the route loads, pointer light, and the save line read from this device | this PR
+- [x] SITE-page-strip | S | the accent strip on the page-switch panels hides while they close and the seam holds, and returns as they open | this PR
 
 ## Next
 (open, not waiting on Nate)

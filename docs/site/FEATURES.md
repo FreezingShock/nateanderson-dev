@@ -38,6 +38,7 @@ Current state of the site outside the three games with their own docs (Brasswork
 - Renovations `/creations/renovations`, Artwork `/creations/artwork`, Projects `/creations/projects`: Renovations is empty and visible by decision; Artwork waits on Nate's pieces.
 - 404 and error pages: branded.
 - Share images: `opengraph-image.tsx` on `/`, about, blog, creations, creations detail, history, studies and timeline. `robots.ts` allows everything and lists the sitemap; `sitemap.ts` has only the home page. All of it sits behind the gate (decision pending, see backlog `SITE-gate-seo`).
+- Game launch cover: `components/game-launch/launch-layer.tsx` (steps and save line), `app/camino/game-launch.css`. Its progress is three real steps on a 12-segment track: request sent, route pushed, route in. A scan runs while the route loads and the pointer lights a spot on the track.
 - Also in `app`: `manifest.ts`, `loading.tsx` (a status card centred on the viewport, shown after 450 ms, on the curtain layer), `global-error.tsx`. Route warm-up: `components/cm/motion-root.tsx` prefetches the nav sections when idle, and the game routes too on a connection that is not 2g, 3g or save-data.
 
 ## Games hub and shared game code
