@@ -15,6 +15,7 @@ Format: `- area | paths | owner (thread title or "free") | since YYYY-MM-DD | do
 - Route loading panel, route warm-up and game launch cover | app/system/system-naos.css (`.sys-load` only), components/cm/motion-root.tsx (warm-up effect only), components/game-launch/*, app/camino/game-launch.css, app/camino/transition.css (strip rules only), `.gs-frame` height and the title-bar anchor in app/camino/game-shell.css and components/games/shell/game-route-shell.tsx | Speed up game loads and page transitions | 2026-11-19 | docs/site
 - Gate, SEO, CI, deploy | proxy.ts, lib/gate, lib/seo.ts, .github, scripts/ci, vercel.json | Unify game check scripts | 2026-11-16 | docs/deploys.md, docs/ci.md
 - naOS status panel on the home hero (last-commit line, panel layout on phones) | components/home/last-commit.tsx, the `.hero-status` and `.hs-commit` rules in components/home/home.css, the `aside.hero-status` block in app/page.tsx | Show the last commit in naOS status | 2026-11-19 | docs/site
+- Phone dock names and section-accent tabs | components/cm/bar.tsx (`Dock` and `tabTone` only), app/camino/nav-naos.css (`.cm-dock` rules only) | Label and color the phone dock | 2026-11-19 | docs/site
 
 ## Games
 - Brasswork | components/{brasswork,brasswork-ui,brasswork-art,automation}, lib/{brasswork,automation}, tests/automation, scripts/{brasswork,automation} | Ship the Brasswork backlog; phone layout and camera pad | 2026-11-15 | docs/games/brasswork
