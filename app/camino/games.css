@@ -377,16 +377,16 @@
 .ctos .cm-grid.g-grid > .cm-card.g-card:nth-child(n) p { color: var(--cm-mute); }
 .ctos .cm-grid.g-grid > .cm-card.g-card:nth-child(n) .g-play { color: var(--g-accent, var(--cm-cyan)); }
 .ctos .cm-grid.g-grid > .cm-card.g-card p { background: none; }
-/* Tag panels: short square labels in the game's own colour. Not pills: no radius, no fill from the page. */
-.ctos .g-tags-list { display: flex; flex-wrap: wrap; gap: 6px; list-style: none; margin: 2px 0 0; padding: 0; }
+/* Flat tags: plain mono text with a small square in the game's own colour. No border, no fill, no radius. */
+.ctos .g-tags-list { display: flex; flex-wrap: wrap; gap: 8px 18px; list-style: none; margin: 2px 0 0; padding: 0; }
 .ctos .g-tagp {
     position: relative;
     display: inline-flex;
     align-items: center;
-    gap: 7px;
-    padding: 6px 9px 5px;
-    border: 1px solid color-mix(in srgb, var(--g-accent, #2fd8e8) 42%, transparent);
-    background: #0b0b0b;
+    gap: 8px;
+    padding: 0;
+    border: 0;
+    background: none;
     font: 700 var(--cm-ctos-t-micro)/1 var(--cm-mono);
     letter-spacing: .12em;
     text-transform: uppercase;
