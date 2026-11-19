@@ -58,9 +58,6 @@ html.gb-route .sf-foot { display: none !important; }
 .gb-top { position: absolute; left: 0; right: 0; top: 0; z-index: 10; display: flex; align-items: center; gap: 14px; height: var(--gb-top-h); padding: 6px max(14px, env(safe-area-inset-right)) 6px max(14px, env(safe-area-inset-left)); pointer-events: none;
     background: linear-gradient(#0b0705 55%, rgba(11, 7, 5, .85) 80%, rgba(11, 7, 5, 0)); }
 .gb-top > * { pointer-events: auto; }
-.gb-back { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 12px 0 8px; background: var(--gb-panel); border: 1px solid var(--gb-line-2); color: var(--gb-ink); font: 600 12px var(--gb-text); letter-spacing: .08em; text-transform: uppercase; text-decoration: none; }
-.gb-back:hover { border-color: var(--gb-amber); color: var(--gb-hi); }
-.gb-back svg { color: var(--gb-amber); }
 .gb-brand { display: grid; gap: 3px; padding-right: 14px; border-right: 1px solid var(--gb-line-2); }
 .gb-title { font: 700 28px/.9 var(--gb-display); letter-spacing: .14em; text-transform: uppercase; color: var(--gb-hi); text-shadow: 0 2px 0 #3a2008, 0 0 18px rgba(255, 180, 60, .25); }
 .gb-site { display: flex; align-items: center; gap: 6px; font: 700 12px/1 var(--gb-display); letter-spacing: .12em; text-transform: uppercase; color: var(--gb-ink); }
@@ -404,8 +401,6 @@ html.gb-route .sf-foot { display: none !important; }
 .gb-row:hover { border-color: var(--gb-amber); }
 .gb-row em { color: var(--gb-hi); }
 .gb-keys { margin-top: 6px; font-size: 12px; line-height: 1.5; color: var(--gb-dim); }
-.gb-backups { display: grid; gap: 2px; margin-top: 6px; }
-.gb-backups > p { font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--gb-dim); }
 
 /* welcome back, other-tab notice, paused */
 .gb-away { position: absolute; left: 50%; top: 50%; z-index: 15; transform: translate(-50%, -50%); width: min(420px, calc(100% - 24px)); display: grid; gap: 10px; padding: 14px; background: var(--gb-solid); border: 1px solid var(--gb-amber); font-size: 13px; animation: gbAway var(--cm-d-enter) var(--cm-ease-out) both; }
@@ -442,8 +437,7 @@ html.gb-route .sf-foot { display: none !important; }
 @media (max-width: 860px) and (min-height: 521px) {
     .gb-root { --gb-top-h: 56px; --gb-tools-top: 60px; --gb-under: 150px; }
     .gb-top { gap: 6px; padding-left: 6px; padding-right: 6px; }
-    .gb-back { min-width: 44px; justify-content: center; padding: 0 10px; }
-    .gb-back span, .gb-prog, .gb-brand, .gb-title { display: none; }
+    .gb-prog, .gb-brand, .gb-title { display: none; }
     .gb-res { flex: none; gap: 5px; }
     .gb-res li { min-height: 44px; padding: 0 8px 0 6px; gap: 5px; }
     .gb-res b { font-size: 15px; }
