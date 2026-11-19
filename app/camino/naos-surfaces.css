@@ -60,7 +60,8 @@
 .ctos .cm-sec-head > div { position: relative; isolation: isolate; }
 .ctos .cm-sec-head > div::before {
   content: ""; position: absolute; z-index: -1; pointer-events: none; inset: -18px -48px -18px -24px;
-  background: radial-gradient(ellipse 80% 90% at 28% 50%, rgba(26, 26, 26, .86) 0, rgba(26, 26, 26, .6) 55%, rgba(26, 26, 26, 0) 100%);
+  /* The pool is the page ground, so it reads dark on the dark site and paper on the light theme. */
+  background: radial-gradient(ellipse 80% 90% at 28% 50%, color-mix(in srgb, var(--cm-ctos-ground) 86%, transparent) 0, color-mix(in srgb, var(--cm-ctos-ground) 60%, transparent) 55%, transparent 100%);
 }
 @media (max-width: 760px) { .ctos .cm-sec-head > div::before { inset: -12px -14px -12px -14px; } }
 

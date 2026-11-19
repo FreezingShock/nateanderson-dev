@@ -268,7 +268,7 @@ export function GameRouteShell({ name, children, header, mode = "framed", game }
         };
         return (
             <ShellContext.Provider value={value}>
-                <div ref={boxRef} className="gs-shell gs-windowed" data-game={name} data-theme={g.theme} data-paused={paused ? "true" : undefined}>
+                <div ref={boxRef} className="gs-shell gs-windowed" data-game={name} data-theme={g.theme} data-island="dark" data-paused={paused ? "true" : undefined}>
                     {/* The back link lives in the title bar, not above the page, so the window carries its own way out. */}
                     <CreationsShell
                         eyebrow={g.eyebrow}
@@ -345,7 +345,7 @@ export function GameRouteShell({ name, children, header, mode = "framed", game }
 
     return (
         <ShellContext.Provider value={value}>
-            <div ref={boxRef} className="gs-shell" data-game={name} data-paused={paused ? "true" : undefined}>
+            <div ref={boxRef} className="gs-shell" data-game={name} data-island="dark" data-paused={paused ? "true" : undefined}>
                 {header && (
                     <div className="gs-bar" role="region" aria-label={`${name} controls`}>
                         <Link prefetch={false} className="gs-back" href={header.href}>
