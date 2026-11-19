@@ -44,8 +44,10 @@
   }
 
   /* Resources: the rate sits under its box, so every box is the same width and the row spaces evenly. */
-  .ab-root.bw .ab-top .ab-res { flex: 1 1 auto; justify-content: center; min-width: 0; }
-  .ab-root.bw .ab-top .ab-res-list { flex-wrap: nowrap; gap: 6px 14px; }
+  /* Raw and part lists sit on one line. The base .ab-res wraps its two lists, which put the parts on a second row, so it
+     is nowrap here. Narrower windows zoom the whole strip down (below) instead of wrapping it. */
+  .ab-root.bw .ab-top .ab-res { flex: 1 1 auto; flex-wrap: nowrap; justify-content: center; gap: 10px; min-width: 0; }
+  .ab-root.bw .ab-top .ab-res-list { flex: none; flex-wrap: nowrap; gap: 6px 10px; }
   .ab-root.bw .ab-top .ab-res-item { flex-direction: column; align-items: center; justify-content: flex-start; gap: 2px; padding: 0; }
   .ab-root.bw .ab-top .ab-res-rate {
     display: block; min-height: 14px; font-size: 11px; line-height: 14px; text-align: center; white-space: nowrap;
@@ -86,17 +88,24 @@
   .ab-root.bw .ab-top { padding-bottom: 8px; }
 }
 
-/* Narrow desktop windows: back button shrinks to its arrow, smaller boxes and plate. */
+/* Narrower desktop windows: back button shrinks to its arrow, smaller boxes and plate. The resource strip zooms as one
+   piece (a CSS zoom keeps the sprite sheet at its real scale, where a width override would crop the icons). */
+@media (min-width: 1100px) and (max-width: 1199px) {
+  .ab-root.bw .ab-top .ab-res { zoom: 0.76; }
+}
+@media (min-width: 1200px) and (max-width: 1279px) {
+  .ab-root.bw .ab-top .ab-res { zoom: 0.88; }
+}
 @media (min-width: 760px) and (max-width: 1099px) {
   .ab-root.bw .ab-top { gap: 10px; padding-left: 10px; padding-right: 10px; }
   .ab-root.bw .ab-top .ab-back { padding: 0 12px; }
   .ab-root.bw .ab-top .ab-back-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
   .ab-root.bw .ab-top .ab-brand-name { padding: 0 18px; font-size: 16px; letter-spacing: .14em; }
+  .ab-root.bw .ab-top .ab-res { zoom: 0.8; }
   .ab-root.bw .ab-top .ab-res-list { gap: 4px 4px; }
   .ab-root.bw .ab-top .ab-res-item { padding: 0; }
   .ab-root.bw .ab-top .ab-nav-slot { width: 44px; }
   .ab-root.bw .ab-top .ab-nav .ab-text-btn { min-width: 44px; padding: 0 10px; }
-  .ab-root.bw .ab-top .ab-res-box .ab-glyph { width: 40px !important; height: 40px !important; }
   .ab-root.bw .ab-top .ab-nav { gap: 6px; }
 }
 @media (min-width: 760px) and (max-width: 919px) {

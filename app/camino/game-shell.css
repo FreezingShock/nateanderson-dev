@@ -85,9 +85,31 @@ html.gs-game-route {
 /* Windowed mode (components/games/shell, mode="windowed"). The page keeps the site chrome. The game runs in a large panel
    under a themed title bar. The panel is a containing block (contain: layout), so the games' own position: fixed roots
    fill the panel instead of the window. Sharp edges, corner brackets, no pills, no coloured strip down a side. */
-.gs-windowed[data-theme="brass"] { --gs-accent: #d29a3c; --gs-hi: #f4cf7e; --gs-bg: #0d0a06; --gs-line: rgba(210, 154, 60, 0.42); --gs-ink: #f0dfb8; }
-.gs-windowed[data-theme="star"] { --gs-accent: #5fe3ff; --gs-hi: #bff3ff; --gs-bg: #05040c; --gs-line: rgba(95, 227, 255, 0.38); --gs-ink: #e9ecf6; }
-.gs-windowed[data-theme="ground"] { --gs-accent: #f0a030; --gs-hi: #ffd36a; --gs-bg: #120e0b; --gs-line: rgba(240, 176, 74, 0.4); --gs-ink: #f2e9d6; }
+/* Each game's window chrome takes its own palette: the title bar, footer, buttons, tooltips and status light.
+   Brasswork is brass on warm dark (no cyan). Starwright is cool ink with cyan light. Groundbreak is amber on dust.
+   --gs-plate is the lit back-to-Games plate; --gs-lip is the dark lower edge that gives the buttons depth. */
+.gs-windowed[data-theme="brass"] {
+    --gs-accent: #d29a3c; --gs-hi: #f4cf7e; --gs-bg: #0d0a06; --gs-line: rgba(210, 154, 60, 0.42); --gs-ink: #f0dfb8;
+    --gs-ink-dim: rgba(240, 223, 184, 0.72); --gs-panel: #1c140b; --gs-lip: #4a2f0f; --gs-glow: rgba(255, 179, 71, 0.38);
+    --gs-led: #ffb347; --gs-plate: linear-gradient(180deg, #f4cf7e 0%, #d29a3c 48%, #b4782a 100%); --gs-plate-ink: #2a1606;
+    --gs-title-shadow: 0 1px 0 #000, 0 0 10px rgba(255, 179, 71, 0.25);
+    --gs-tex: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='4' shape-rendering='crispEdges'%3E%3Cg fill='%23000' fill-opacity='.22'%3E%3Crect x='0' y='0' width='1' height='1'/%3E%3Crect x='2' y='0' width='1' height='1'/%3E%3Crect x='1' y='1' width='1' height='1'/%3E%3Crect x='3' y='1' width='1' height='1'/%3E%3Crect x='0' y='2' width='1' height='1'/%3E%3Crect x='2' y='2' width='1' height='1'/%3E%3Crect x='1' y='3' width='1' height='1'/%3E%3Crect x='3' y='3' width='1' height='1'/%3E%3C/g%3E%3C/svg%3E");
+}
+.gs-windowed[data-theme="star"] {
+    --gs-accent: #5fe3ff; --gs-hi: #bff3ff; --gs-bg: #05040c; --gs-line: rgba(95, 227, 255, 0.38); --gs-ink: #e9ecf6;
+    --gs-ink-dim: rgba(233, 236, 246, 0.7); --gs-panel: #0b0a1b; --gs-lip: #0b3442; --gs-glow: rgba(95, 227, 255, 0.34);
+    --gs-led: #5fe3ff; --gs-plate: linear-gradient(180deg, rgba(95, 227, 255, 0.34), rgba(95, 227, 255, 0.1)); --gs-plate-ink: #eafcff;
+    --gs-title-shadow: 0 0 12px rgba(95, 227, 255, 0.45);
+    --gs-tex: radial-gradient(circle at 18% 32%, rgba(191, 243, 255, 0.55) 0 0.6px, transparent 1.1px), radial-gradient(circle at 72% 74%, rgba(191, 243, 255, 0.4) 0 0.6px, transparent 1.1px);
+    --gs-tex-size: 120px 90px;
+}
+.gs-windowed[data-theme="ground"] {
+    --gs-accent: #f0a030; --gs-hi: #ffd36a; --gs-bg: #120e0b; --gs-line: rgba(240, 176, 74, 0.4); --gs-ink: #f2e9d6;
+    --gs-ink-dim: rgba(242, 233, 214, 0.72); --gs-panel: #1d1610; --gs-lip: #5a3a10; --gs-glow: rgba(240, 160, 48, 0.36);
+    --gs-led: #f0a030; --gs-plate: linear-gradient(180deg, #ffd36a 0%, #f0a030 55%, #c47a14 100%); --gs-plate-ink: #22150a;
+    --gs-title-shadow: 0 1px 0 #000;
+    --gs-tex: repeating-linear-gradient(-45deg, rgba(240, 160, 48, 0.09) 0 6px, transparent 6px 14px);
+}
 
 .gs-win {
     position: relative;
@@ -106,7 +128,9 @@ html.gs-game-route {
     align-items: center;
     gap: 8px 12px;
     padding: 6px 12px;
-    background: var(--gs-bg);
+    background-color: var(--gs-bg);
+    background-image: var(--gs-tex, none);
+    background-size: var(--gs-tex-size, auto);
     border: 1px solid var(--gs-line);
     font-family: var(--font-roboto-mono), ui-monospace, monospace;
     font-size: 12px;
@@ -115,18 +139,32 @@ html.gs-game-route {
 }
 
 .gs-win-bar {
+    z-index: 2;
     min-height: 52px;
     border-bottom: 0;
+    animation: gs-bar-in var(--cm-d-enter) var(--cm-ease) both;
+}
+
+.gs-win-foot {
+    z-index: 2;
+    min-height: 48px;
+    border-top: 0;
+    animation: gs-foot-in var(--cm-d-enter) var(--cm-ease) both;
+}
+
+@keyframes gs-bar-in { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }
+@keyframes gs-foot-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@keyframes gs-led { 50% { opacity: 0.25; } }
+
+@media (prefers-reduced-motion: reduce) {
+    .gs-win-bar,
+    .gs-win-foot,
+    .gs-win-bar .gs-state::before { animation: none; }
 }
 
 /* Touch screens: the title-bar buttons meet the 44px target size. */
 @media (hover: none) {
     .gs-win-btn { min-height: 44px; }
-}
-
-.gs-win-foot {
-    min-height: 48px;
-    border-top: 0;
 }
 
 /* Corner brackets on the title bar: the only accent on its edges. */
@@ -155,18 +193,77 @@ html.gs-game-route {
     margin: 0;
     font: inherit;
     font-size: 15px;
-    font-weight: 600;
-    letter-spacing: 0.1em;
+    font-weight: 700;
+    letter-spacing: 0.12em;
     color: var(--gs-accent);
+    text-shadow: var(--gs-title-shadow, none);
 }
 
 .gs-win-kick {
-    opacity: 0.6;
+    color: var(--gs-hi);
+    opacity: 0.8;
     font-size: 11px;
+    letter-spacing: 0.16em;
+}
+
+/* Back to Games: a lit plate at the left end of the title bar, the way the site's own back buttons read. */
+.gs-win-back {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    gap: 8px;
+    min-height: 40px;
+    margin-right: 4px;
+    padding: 0 14px 0 10px;
+    font: inherit;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--gs-plate-ink);
+    background: var(--gs-plate);
+    border: 0;
+    text-decoration: none;
+    box-shadow: inset 1px 1px 0 rgba(255, 255, 255, 0.4), inset -1px -1px 0 rgba(0, 0, 0, 0.35), 0 3px 0 var(--gs-lip), 0 6px 10px rgba(0, 0, 0, 0.45);
+    transition: transform var(--cm-d-fast) var(--cm-ease), box-shadow var(--cm-d-fast) var(--cm-ease), filter var(--cm-d-fast) ease;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+}
+.gs-win .gs-win-back,
+.gs-win .gs-win-back:visited,
+.gs-win .gs-win-back:hover,
+.gs-win .gs-win-back:focus-visible { color: var(--gs-plate-ink); text-decoration: none; }
+.gs-win-back svg { flex: none; width: 12px; height: 12px; }
+.gs-win .gs-win-back:hover { transform: translateY(-1px); filter: brightness(1.08); box-shadow: inset 1px 1px 0 rgba(255, 255, 255, 0.4), inset -1px -1px 0 rgba(0, 0, 0, 0.35), 0 4px 0 var(--gs-lip), 0 0 18px -4px var(--gs-glow); }
+.gs-win .gs-win-back:active { transform: translateY(2px); box-shadow: inset 1px 1px 0 rgba(0, 0, 0, 0.3), 0 1px 0 var(--gs-lip); }
+.gs-win .gs-win-back:focus-visible { outline: 2px solid var(--gs-hi); outline-offset: 2px; }
+
+/* Status light: a small square that glows while the game runs and goes dark when it is paused. */
+.gs-win-bar .gs-state {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--gs-ink-dim);
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    white-space: nowrap;
+}
+.gs-win-bar .gs-state::before {
+    content: "";
+    width: 7px;
+    height: 7px;
+    background: var(--gs-led);
+    box-shadow: 0 0 8px var(--gs-led);
+    animation: gs-led 1.6s steps(2, end) infinite;
+}
+.gs-shell[data-paused="true"] .gs-win-bar .gs-state::before {
+    background: var(--gs-ink-dim);
+    box-shadow: none;
+    animation: none;
 }
 
 .gs-win-btn,
 .gs-fs-link {
+    position: relative;
     display: inline-flex;
     align-items: center;
     gap: 6px;
@@ -177,19 +274,83 @@ html.gs-game-route {
     letter-spacing: inherit;
     text-transform: inherit;
     color: var(--gs-ink);
-    background: transparent;
+    background: var(--gs-panel, transparent);
     border: 1px solid var(--gs-line);
     border-radius: 0;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 3px 0 var(--gs-lip);
     text-decoration: none;
     cursor: pointer;
     touch-action: manipulation;
     -webkit-tap-highlight-color: transparent;
+    transition: transform var(--cm-d-fast) var(--cm-ease), box-shadow var(--cm-d-fast) var(--cm-ease), color var(--cm-d-fast) ease, border-color var(--cm-d-fast) ease;
 }
 
 .gs-win-btn:hover,
 .gs-fs-link:hover {
     border-color: var(--gs-accent);
-    color: var(--gs-accent);
+    color: var(--gs-hi);
+    transform: translateY(-1px);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 4px 0 var(--gs-lip), 0 0 16px -4px var(--gs-glow);
+}
+
+.gs-win-btn:active,
+.gs-fs-link:active {
+    transform: translateY(2px);
+    box-shadow: inset 0 1px 0 rgba(0, 0, 0, 0.3), 0 1px 0 var(--gs-lip);
+}
+
+/* Icon-only buttons (export and import save) with a themed tooltip on hover and keyboard focus. */
+.gs-win-icon {
+    width: 40px;
+    padding: 0;
+    justify-content: center;
+}
+.gs-win-icon svg { width: 16px; height: 16px; }
+.gs-win-icon::after,
+.gs-win-icon::before {
+    position: absolute;
+    left: 50%;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity var(--cm-d-fast) ease, transform var(--cm-d-fast) var(--cm-ease);
+}
+.gs-win-icon::after {
+    content: attr(data-tip);
+    bottom: calc(100% + 12px);
+    transform: translate(-50%, 4px);
+    padding: 6px 10px;
+    white-space: nowrap;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--gs-hi);
+    background: var(--gs-panel);
+    border: 1px solid var(--gs-accent);
+    box-shadow: 0 0 16px -4px var(--gs-glow), 0 4px 0 var(--gs-lip);
+    z-index: 3;
+}
+/* The little pointer under the tooltip. */
+.gs-win-icon::before {
+    content: "";
+    bottom: calc(100% + 7px);
+    width: 8px;
+    height: 8px;
+    background: var(--gs-panel);
+    border-right: 1px solid var(--gs-accent);
+    border-bottom: 1px solid var(--gs-accent);
+    transform: translate(-50%, 4px) rotate(45deg);
+    z-index: 3;
+}
+.gs-win-icon:hover::after,
+.gs-win-icon:focus-visible::after {
+    opacity: 1;
+    transform: translate(-50%, 0);
+}
+.gs-win-icon:hover::before,
+.gs-win-icon:focus-visible::before {
+    opacity: 1;
+    transform: translate(-50%, 0) rotate(45deg);
 }
 
 .gs-win-btn[aria-pressed="true"] {
@@ -261,11 +422,32 @@ html.gs-game-route {
     color: #f08a7a;
 }
 
+/* The hint at the bottom right: set in the game's own ink with a small info mark, not a faded grey line. */
 .gs-win-hint {
-    opacity: 0.6;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: auto;
+    padding: 0 0 0 12px;
+    max-width: 62ch;
+    border-left: 1px solid var(--gs-line);
+    color: var(--gs-ink-dim);
     font-size: 11px;
+    line-height: 1.35;
     letter-spacing: 0.02em;
     text-transform: none;
+}
+.gs-win-hint::before {
+    content: "i";
+    flex: none;
+    display: inline-grid;
+    place-items: center;
+    width: 16px;
+    height: 16px;
+    font-weight: 700;
+    color: var(--gs-bg);
+    background: var(--gs-accent);
+    box-shadow: 0 0 10px -2px var(--gs-glow);
 }
 
 /* Groundbreak hides the site bar and the dock on its route, so nothing covers the panel's bottom. Its windows (the Skyline
@@ -286,4 +468,6 @@ html.gs-game-route {
     .gs-frame { height: clamp(360px, calc(100dvh - 300px), 940px); }
     .gs-win-hint { display: none; }
     .gs-win-title h3 { font-size: 14px; }
+    /* Phones: the back plate keeps its chevron, the word goes (it keeps its name for screen readers). */
+    .gs-win-back-txt { display: none; }
 }
