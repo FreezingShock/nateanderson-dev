@@ -7,6 +7,7 @@ import { openConsole } from "@/components/cm/console-entry";
 import { PIXEL_FOR, PixelIcon } from "@/components/cm/pixel-icons";
 import { NateGlyph } from "@/components/cm/mark";
 import { navItems } from "@/lib/nav";
+import { SECTION_ACCENT, sectionForPath } from "@/lib/section-accent";
 import { useSoundPrefs } from "@/lib/sound/use-sound";
 import { sfx } from "@/lib/sound/sounds";
 
@@ -98,7 +99,15 @@ export function Bar() {
     );
 }
 
-/** The bottom dock: one tab per page, numbered like the site map. A plate slides to the tab you tap, before the page has loaded. */
+/** Colour of a dock tab: its section's accent (Creations pink, Studies green, ...). Home has no section and keeps the
+ *  time-of-day accent, the same colour the home page uses. */
+function tabTone(href: string): string {
+    const sec = sectionForPath(href);
+    return sec ? SECTION_ACCENT[sec] : "var(--cm-accent)";
+}
+
+/** The bottom dock: one tab per page, numbered like the site map. A plate slides to the tab you tap, before the page has loaded.
+ *  The current tab and the plate take the accent of the page they lead to. */
 export function Dock() {
     const path = usePathname();
     const [next, setNext] = useState<string | null>(null);
@@ -155,7 +164,12 @@ export function Dock() {
             className="cm-dock"
             aria-label="Primary"
             data-pending={next ? "" : undefined}
-            style={{ ["--tabs" as string]: navItems.length, ["--i" as string]: Math.max(idx, 0), ["--dist" as string]: dist } as CSSProperties}
+            style={{
+                ["--tabs" as string]: navItems.length,
+                ["--i" as string]: Math.max(idx, 0),
+                ["--dist" as string]: dist,
+                ["--ind-c" as string]: idx >= 0 ? tabTone(navItems[idx].href) : "var(--sec)",
+            } as CSSProperties}
         >
             {wake && (
                 <b
@@ -174,6 +188,7 @@ export function Dock() {
                     href={n.href}
                     aria-current={isActive(path, n.href) ? "page" : undefined}
                     data-on={isActive(target, n.href) ? "" : undefined}
+                    style={{ ["--tab-c" as string]: tabTone(n.href) } as CSSProperties}
                     onClick={(e) => {
                         // Tapping the tab you are already on returns to the top of the page, the way a native tab bar does.
                         // A thumb can reach it from anywhere on a long page; deeper pages still go to their section.

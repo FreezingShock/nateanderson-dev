@@ -2,7 +2,7 @@ import { DeferredFrame } from "@/components/creations/deferred-frame";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getProjectBySlug, getAllProjectSlugs, getProjects, getRecentRenovations, lookupProject, statusLabel } from "@/lib/content";
-import { PROJECT_GALLERY, PROJECT_LINKS, PROJECT_PREVIEW, categoryById } from "@/lib/creations-data";
+import { PROJECT_GALLERY, PROJECT_LINKS, PROJECT_PREVIEW, PROJECT_STORY, categoryById } from "@/lib/creations-data";
 import { CreationsHead, CreationsShell, FeedOffline, IdCard, Section } from "@/components/creations-sections";
 import { ProjectGallery } from "@/components/creations/project-gallery";
 import { pageMeta } from "@/lib/seo";
@@ -56,6 +56,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
     const kind = isProject ? "Project" : "Renovation";
     const shots = PROJECT_GALLERY[slug] ?? [];
     const preview = PROJECT_PREVIEW[slug];
+    const story = PROJECT_STORY[slug];
     const outbound = PROJECT_LINKS[slug] ?? (project.href ? { href: project.href, label: "Visit project" } : undefined);
 
     // Lead and gallery split: with a live preview, every screenshot goes in the gallery. Without one, the first
@@ -118,6 +119,31 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
                         <div className="cm-viz cr-plate">
                             <span className={`cm-tag flat ${tone[project.status]} cr-plate-tag`}>{statusLabel[project.status]}</span>
                             <Icon className="cr-plate-ic" aria-hidden="true" />
+                        </div>
+                    )}
+
+                    {story && (
+                        <div className="cr-story">
+                            <div className="cr-story-text">
+                                <span className="cm-lbl">Build story</span>
+                                {story.story.map((para) => (
+                                    <p key={para} className="cm-body">{para}</p>
+                                ))}
+                            </div>
+                            <div className="cm-panel cr-facts">
+                                <div className="cm-hbar">
+                                    <span>Stack and role</span>
+                                    <span>{kind}</span>
+                                </div>
+                                <dl className="cr-facts-list">
+                                    {story.facts.map((f) => (
+                                        <div key={f.k} className="cr-fact">
+                                            <dt className="cm-lbl">{f.k}</dt>
+                                            <dd>{f.v}</dd>
+                                        </div>
+                                    ))}
+                                </dl>
+                            </div>
                         </div>
                     )}
 
