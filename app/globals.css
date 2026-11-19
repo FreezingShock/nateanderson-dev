@@ -13,6 +13,7 @@
 @import "./camino/entrances.css";
 @import "./camino/micro.css";
 @import "./camino/site-motion.css";
+@import "./camino/paper.css";
 
 /* Dark is the default Camino ground; "paper" is the light counterpart. */
 @custom-variant dark (&:where(:root:not([data-theme="paper"]) *));

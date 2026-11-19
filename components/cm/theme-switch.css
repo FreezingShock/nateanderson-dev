@@ -1,0 +1,16 @@
+/* Footer theme switch (components/cm/theme-switch.tsx). Same shape as the accent switch: sharp, mono caps, no pills. */
+.thm-sw { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; }
+.thm-sw-lead { color: var(--cm-ctos-meta); }
+.thm-sw-row { display: inline-flex; flex-wrap: wrap; gap: 0; border: 1px solid var(--cm-hair); }
+.thm-sw-btn {
+  appearance: none; display: inline-flex; align-items: center; gap: 8px; min-height: 32px; padding: 0 10px;
+  background: var(--cm-ctos-panel); color: var(--cm-ctos-meta); border: 0; border-right: 1px solid var(--cm-hair);
+  font: inherit; letter-spacing: inherit; text-transform: inherit; cursor: pointer;
+  transition: background-color var(--cm-d-base) var(--cm-ease), color var(--cm-d-base) var(--cm-ease);
+}
+.thm-sw-btn:last-child { border-right: 0; }
+.thm-sw-btn i { width: 10px; height: 10px; flex: none; background: var(--swatch, #888); box-shadow: inset 0 0 0 1px var(--cm-hair-hi); }
+.thm-sw-btn[data-k="dark"] i { --swatch: #131313; }
+.thm-sw-btn[data-k="paper"] i { --swatch: #f3efe6; }
+.thm-sw-btn:hover { color: var(--cm-fg); background: var(--cm-ctos-deep); }
+.thm-sw-btn[aria-pressed="true"] { color: var(--cm-accent); background: var(--cm-accent-wash); box-shadow: inset 0 -2px 0 var(--cm-accent); }
