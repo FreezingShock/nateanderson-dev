@@ -149,10 +149,12 @@
 :root[data-accent="violet"] { --cm-cyan: #a58bff; --cm-cyan-ink: #0d0a24; --cm-cyan-deep: #3d2f7a; --cm-cyan-wash: rgba(165, 139, 255, .14); }
 /* ---- Section accent (lib/section-accent.ts). html[data-section] picks one fixed colour per division; --sec is that
         colour, or the time accent on the home page and on game routes (no section). Chrome that marks a division
-        (eyebrow, title underline, card and panel hover edges) reads --sec. The art and the shared chrome stay on the
-        time accent. ---------------------------------------------------------------------------------------------- */
+        (eyebrow, title underline, card and panel hover edges) reads --sec. The dither art reads --art, which is --sec. ---------------------------------------------------------------------------------------------- */
 
 :root { --sec: var(--cm-accent); }
+/* Dither art and its backdrop, washes and halo (components/cm/naos-art.css, site-footer.css): the division colour on
+   division pages, the time accent on home and game routes. Follows --sec. */
+:root { --art: var(--sec); }
 :root[data-section="creations"] { --sec: #ff2d8a; }
 :root[data-section="studies"]   { --sec: #3ce07a; }
 :root[data-section="timeline"]  { --sec: #ff7a1a; }
