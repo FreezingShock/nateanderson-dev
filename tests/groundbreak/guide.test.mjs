@@ -70,3 +70,17 @@ test("console: next, go, auto, rate, admin gate, give, warp", () => {
     assert.ok(Number.isNaN(Q.parseDuration("soon")) && Q.parseDuration("2h") === 7200);
     C.gbCommand(s, ["admin", "off"]);
 });
+
+test("buy and wait cues carry a price, and wait cues a 0 to 1 progress", () => {
+    const s = E.fresh(0);
+    let sawBuy = false, sawWait = false;
+    for (let i = 0; i < 600 && !(sawBuy && sawWait); i++) {
+        run(s, 3);
+        const c = G.nextCue(s);
+        if (c.kind === "buy") { sawBuy = true; assert.ok(c.cost && c.cost.text.length > 0, "buy cue has a price"); }
+        if (c.kind === "wait" && c.cost) { sawWait = true; assert.ok(c.progress >= 0 && c.progress <= 1, `progress ${c.progress}`); }
+        if (c.doable && c.kind !== "incorporate") G.doCue(s, c);
+    }
+    assert.ok(sawBuy, "a buy cue showed up");
+    assert.ok(sawWait, "a wait cue with a price showed up");
+});
