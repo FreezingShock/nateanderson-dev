@@ -269,16 +269,22 @@ export function GameRouteShell({ name, children, header, mode = "framed", game }
         return (
             <ShellContext.Provider value={value}>
                 <div ref={boxRef} className="gs-shell gs-windowed" data-game={name} data-theme={g.theme} data-paused={paused ? "true" : undefined}>
+                    {/* The back link lives in the title bar, not above the page, so the window carries its own way out. */}
                     <CreationsShell
                         eyebrow={g.eyebrow}
                         title={[g.name]}
                         description={g.description}
-                        back={{ href: g.backHref, label: g.backLabel }}
                         variant="sub"
                     >
                         <Section id="play" no="01" label="Play" title={g.playTitle} ctos>
                             <section ref={panelRef} className="gs-win" aria-label={`${name} panel`}>
                                 <header className="gs-win-bar">
+                                    <Link prefetch={false} className="gs-win-back" href={g.backHref} aria-label={g.backLabel}>
+                                        <svg viewBox="0 0 12 12" aria-hidden="true">
+                                            <path d="M7.5 2 3.5 6l4 4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="square" />
+                                        </svg>
+                                        <span className="gs-win-back-txt">Games</span>
+                                    </Link>
                                     <div className="gs-win-title">
                                         <span className="gs-win-kick">{g.eyebrow}</span>
                                         <h3>{name}</h3>
@@ -313,17 +319,16 @@ export function GameRouteShell({ name, children, header, mode = "framed", game }
                                 </div>
                                 {slot && (
                                     <footer className="gs-win-foot">
-                                        <button type="button" className="gs-win-btn" onClick={onExport}>
-                                            <svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true">
-                                                <path d="M6 1v6M3 4.5 6 7.5 9 4.5M1.5 10.5h9" fill="none" stroke="currentColor" strokeWidth="1.4" />
+                                        {/* Icon-only: the name is the aria-label and the tooltip (CSS, on hover and keyboard focus). */}
+                                        <button type="button" className="gs-win-btn gs-win-icon" data-tip="Export save" aria-label="Export save" onClick={onExport}>
+                                            <svg viewBox="0 0 12 12" aria-hidden="true">
+                                                <path d="M6 1v6.5M3.2 4.8 6 7.6l2.8-2.8M1.5 10.5h9" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="square" />
                                             </svg>
-                                            Export save
                                         </button>
-                                        <button type="button" className="gs-win-btn" onClick={() => fileRef.current?.click()}>
-                                            <svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true">
-                                                <path d="M6 7.5V1.5M3 4 6 1l3 3M1.5 10.5h9" fill="none" stroke="currentColor" strokeWidth="1.4" />
+                                        <button type="button" className="gs-win-btn gs-win-icon" data-tip="Import save" aria-label="Import save" onClick={() => fileRef.current?.click()}>
+                                            <svg viewBox="0 0 12 12" aria-hidden="true">
+                                                <path d="M6 7.5V1M3.2 3.7 6 .9l2.8 2.8M1.5 10.5h9" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="square" />
                                             </svg>
-                                            Import save
                                         </button>
                                         <input ref={fileRef} type="file" accept="application/json,.json" hidden onChange={onPick} aria-label={`Import a ${name} save file`} />
                                         <p className="gs-win-msg" role="status" data-tone={saveMsg?.tone}>{saveMsg?.text ?? ""}</p>
