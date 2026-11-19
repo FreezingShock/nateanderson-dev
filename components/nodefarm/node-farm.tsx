@@ -1317,7 +1317,7 @@ export function NodeFarm() {
     const latch = (id: string) => { if (onPane(id)) opened.current.add(id); return opened.current.has(id); };
     return (
         <TipCtx.Provider value={tipApi}>
-        <div className="nf" ref={root} tabIndex={-1} data-tab={tab} data-side={sideShown} data-win={win || undefined} data-fs={fs ? "" : undefined} data-oc={s.overclock > 0 ? "" : undefined}>
+        <div className="nf" ref={root} tabIndex={-1} data-island="dark" data-tab={tab} data-side={sideShown} data-win={win || undefined} data-fs={fs ? "" : undefined} data-oc={s.overclock > 0 ? "" : undefined}>
             {fs && (
                 <div className="nf-fsbar">
                     <span>NODE.FARM // FULL SCREEN</span>

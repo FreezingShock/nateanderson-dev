@@ -1,0 +1,37 @@
+/* ==========================================================================
+   Light (paper) theme: the warm paper picked 2026-11-19 from three mocks.
+   Dark is the default. components/cm/theme-switch.tsx sets data-theme="paper" on <html>.
+   The palette is in camino.tokens.css (the paper block). The naOS tokens are set here, and the rules below only fix
+   the few places that were written for dark. Everything reads tokens, so a dark island (data-theme="dark", used by
+   the game windows) resets to the dark values on its own.
+   ========================================================================== */
+:root[data-theme="paper"] {
+    --cm-ctos-ground: #f3efe6;
+    --cm-ctos-block: #1c1b18;     /* title plates: ink on paper */
+    --cm-ctos-ink: #f3efe6;       /* text on the plates: paper */
+    --cm-ctos-panel: #fbf9f3;     /* status cards, grid cards, CTA plates */
+    --cm-ctos-deep: #ebe6d9;      /* dashed and planned cards */
+    --cm-ctos-meta: #625c4e;      /* meta text on panels: 6:1 or better on the panel */
+    --nv-plate: #1c1b18;
+    --nv-ink: #f3efe6;
+    --naos-sb-hot: #1c1b18;
+    --naos-sb-thumb: #1c1b18;
+}
+
+:root[data-theme="paper"],
+:root[data-theme="paper"] body { background-color: var(--cm-void); }
+:root[data-theme="paper"] body.ctos-on { background-color: var(--cm-ctos-ground); }
+
+/* Hard-coded dark spots on naOS pages. */
+:root[data-theme="paper"] .ctos .cm-card .cm-viz { background: var(--cm-ctos-deep); }
+:root[data-theme="paper"] .ctos .pf-now,
+:root[data-theme="paper"] .ctos .pf-pillars > div:nth-child(even) { background: var(--cm-ctos-panel); }
+:root[data-theme="paper"] .ctos .pf-steps li::before { background: var(--cm-ctos-block); }
+/* "renders" in the hero is hollow type: its outline is the ink, read from the text colour. */
+:root[data-theme="paper"] .ctos .hero-title .hw-renders { -webkit-text-stroke-color: var(--cm-fg); }
+/* The thin section rules were paper-white lines on dark. */
+:root[data-theme="paper"] body.ctos-on .cm-sec-rule { background: linear-gradient(90deg, var(--cm-hair-hi), var(--cm-hair) 60%, transparent); }
+/* The dithered backdrops were drawn as light-on-dark. On paper they sit under the cream ground, so the dark wash goes. */
+:root[data-theme="paper"] .naos-scrim,
+:root[data-theme="paper"] .naos-backdrop-ground { background: transparent; }
+:root[data-theme="paper"] .naos-art-ink { mix-blend-mode: multiply; opacity: .6; }

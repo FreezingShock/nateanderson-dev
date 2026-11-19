@@ -48,6 +48,12 @@
   --cm-accent-deep: var(--cm-cyan-deep);
   --cm-accent-wash: var(--cm-cyan-wash);
   --cm-accent-rgb:  47, 216, 232;   /* for rgba() mixes: rgba(var(--cm-accent-rgb), .5) */
+  /* Dark cyan source for dark islands (games inside a paper page). The time-of-day bands below set these too, so an
+     island follows the band the same way the site does. The paper theme never touches --cm-dk-*. */
+  --cm-dk-cyan:      #2fd8e8;
+  --cm-dk-cyan-ink:  #031417;
+  --cm-dk-cyan-deep: #0b5a62;
+  --cm-dk-cyan-wash: rgba(47, 216, 232, .12);
 
   /* ---- Type ----------------------------------------------------------- */
   --cm-display: "Helvetica Neue", Helvetica, var(--font-arimo), "Arimo", Arial, sans-serif;
@@ -117,16 +123,36 @@
 /* ---- Paper theme: the white "card" counterpoint (opening/closing beats,
         print, light sections). Same tokens, inverted. ------------------- */
 :root[data-theme="paper"], [data-theme="paper"] {
+  /* Warm paper (picked 2026-11-19 from three mocks). Cream ground, ink plates, ink text. Titles and the nav plate read
+     --cm-ctos-block and --nv-plate, which paper.css sets to the ink. */
   color-scheme: light;
-  --cm-void: #f2f3f1;  --cm-fg: #050607;  --cm-mute: #4a565c;  --cm-dim: #8a8f94;
-  --cm-paper: #050607; --cm-ink-0: #f2f3f1;  --cm-paper-mute: #8494a0;
-  --cm-glass: rgba(255,255,255,.7); --cm-glass-hi: rgba(255,255,255,.88); --cm-solid: #ffffff;
-  --cm-hair: rgba(5,6,7,.18); --cm-hair-hi: rgba(5,6,7,.4);
+  --cm-void: #f3efe6;  --cm-fg: #1c1b18;  --cm-mute: #55514a;  --cm-dim: #7d776a;
+  --cm-paper: #1c1b18; --cm-ink-0: #f3efe6;  --cm-paper-mute: #55514a;
+  --cm-glass: rgba(251, 249, 243, .78); --cm-glass-hi: rgba(251, 249, 243, .92); --cm-solid: #fbf9f3;
+  --cm-hair: rgba(28, 27, 24, .16); --cm-hair-hi: rgba(28, 27, 24, .38);
   --cm-cyan: #0a8f9a; --cm-cyan-ink: #ffffff; --cm-cyan-deep: #d9f7fa;
-  --cm-cyan-wash: rgba(10,143,154,.1);
+  --cm-cyan-wash: rgba(10, 143, 154, .1);
   --cm-alert: #e8412c;
-  --cm-shadow: 0 18px 40px -28px rgba(0,0,0,.35);
+  --cm-shadow: 0 18px 40px -28px rgba(28, 27, 24, .35);
   --cm-accent: var(--cm-cyan); --cm-accent-ink: var(--cm-cyan-ink); --cm-accent-deep: var(--cm-cyan-deep); --cm-accent-wash: var(--cm-cyan-wash); --cm-accent-rgb: 10, 143, 154;
+}
+
+/* Dark island (games). An element marked data-island="dark" inside a paper page keeps the dark palette, so a game's
+   window never changes with the site theme. Values mirror :root above. The band accent comes from --cm-dk-*, so an
+   island follows Pacific time like the dark site does. Keep this list in step with the dark :root block. */
+[data-island="dark"] {
+  color-scheme: dark;
+  --cm-void: #040506;  --cm-fg: #e9eff1;  --cm-mute: #8a99a3;  --cm-dim: #88979e;
+  --cm-paper: #f2f3f1; --cm-ink-0: #050607;  --cm-paper-mute: #4a565c;
+  --cm-glass: rgba(9, 12, 14, .64); --cm-glass-hi: rgba(14, 18, 21, .72); --cm-solid: #0a0d0e;
+  --cm-hair: rgba(226, 238, 240, .14); --cm-hair-hi: rgba(226, 238, 240, .30);
+  --cm-cyan: var(--cm-dk-cyan); --cm-cyan-ink: var(--cm-dk-cyan-ink); --cm-cyan-deep: var(--cm-dk-cyan-deep); --cm-cyan-wash: var(--cm-dk-cyan-wash);
+  --cm-alert: #ff4436;
+  --cm-shadow: 0 1px 0 rgba(255, 255, 255, .04) inset, 0 18px 40px -24px rgba(0, 0, 0, .9);
+  --cm-accent: var(--cm-cyan); --cm-accent-ink: var(--cm-cyan-ink); --cm-accent-deep: var(--cm-cyan-deep); --cm-accent-wash: var(--cm-cyan-wash); --cm-accent-rgb: 47, 216, 232;
+  --sec: var(--cm-accent); --art: var(--sec);
+  --cm-ctos-ground: #1a1a1a; --cm-ctos-block: #f4f4f2; --cm-ctos-ink: #1a1a1a; --cm-ctos-panel: #131313;
+  --cm-ctos-deep: #111; --cm-ctos-meta: #8796a0;
 }
 
 /* ---- Time-of-day accent (Pacific). html[data-accent] is set before first paint by ACCENT_SCRIPT (lib/accent.ts):
@@ -145,8 +171,8 @@
               --cm-cyan-deep var(--cm-d-accent) var(--cm-ease), --cm-cyan-wash var(--cm-d-accent) var(--cm-ease),
               --sec var(--cm-d-accent) var(--cm-ease);
 }
-:root[data-accent="amber"]  { --cm-cyan: #f2c94c; --cm-cyan-ink: #1a1404; --cm-cyan-deep: #6b5510; --cm-cyan-wash: rgba(242, 201, 76, .12); }
-:root[data-accent="violet"] { --cm-cyan: #a58bff; --cm-cyan-ink: #0d0a24; --cm-cyan-deep: #3d2f7a; --cm-cyan-wash: rgba(165, 139, 255, .14); }
+:root[data-accent="amber"]  { --cm-cyan: #f2c94c; --cm-cyan-ink: #1a1404; --cm-cyan-deep: #6b5510; --cm-cyan-wash: rgba(242, 201, 76, .12); --cm-dk-cyan: #f2c94c; --cm-dk-cyan-ink: #1a1404; --cm-dk-cyan-deep: #6b5510; --cm-dk-cyan-wash: rgba(242, 201, 76, .12); }
+:root[data-accent="violet"] { --cm-cyan: #a58bff; --cm-cyan-ink: #0d0a24; --cm-cyan-deep: #3d2f7a; --cm-cyan-wash: rgba(165, 139, 255, .14); --cm-dk-cyan: #a58bff; --cm-dk-cyan-ink: #0d0a24; --cm-dk-cyan-deep: #3d2f7a; --cm-dk-cyan-wash: rgba(165, 139, 255, .14); }
 /* ---- Section accent (lib/section-accent.ts). html[data-section] picks one fixed colour per division; --sec is that
         colour, or the time accent on the home page and on game routes (no section). Chrome that marks a division
         (eyebrow, title underline, card and panel hover edges) reads --sec. The dither art reads --art, which is --sec. ---------------------------------------------------------------------------------------------- */

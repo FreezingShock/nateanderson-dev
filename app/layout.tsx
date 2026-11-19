@@ -76,9 +76,8 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
             <body suppressHydrationWarning>
                 <ThemeProvider
                     attribute="data-theme"
-                    themes={["dark"]}
+                    themes={["dark", "paper"]}
                     defaultTheme="dark"
-                    forcedTheme="dark"
                     enableSystem={false}
                     disableTransitionOnChange
                 >
