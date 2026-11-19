@@ -17,7 +17,7 @@ Before any change: `npm run test:nodefarm`. Visual changes also need PNG screens
 - [ ] ASK AUDIT-real-phone-pass | size M | Not testable in the cloud: Safari, touch on a real phone, sound. Needs Nate's playthrough (see MOTION-real-device) | device
 - [ ] ASK AUDIT-detail-sheet-wrap | size S | The Almanac tap sheet breaks "Neon · weight 20" across lines at 390. Taste call on the sheet's header layout | taste
 
-- [ ] ASK SW-constellation-desktop-size | size M | At 1440 all four constellations show at once and the node labels draw about 6 px, so they are hard to read. Options: one constellation at a time on desktop, as on phones (recommended), or keep the whole sky and draw it larger inside its panel. Taste and layout call | `components/starwright/star-chart.tsx`, `app/camino/starwright.css` | taste
+
 
 ## Ideas
 - [ ] ASK SW-art-next-pass | size M | Next art pass, offered and not picked: visitor and cloud cards, supernova and black hole ending screens. Planet break-up chunks and neutron beams are done (his pick 2026-11-15) | taste
@@ -75,3 +75,4 @@ Before any change: `npm run test:nodefarm`. Visual changes also need PNG screens
 
 ## Resolution 2026-11-18 (thread "Sharpen game resolution on all screens")
 - [x] RES-star-integer-scale | size S | The star canvas (320 x 180 art) is sized to a whole number of device px per art px, so pixels are all one width (3 and 4 device px on a 3x phone before). Covers the scene as cover did. Done when the phone and desktop shots show the same layout and every art pixel is a whole device-pixel block | `components/starwright/starwright.tsx` (integer pixel scale effect) | #PR
+- [x] SW-constellation-desktop-size | size M | Constellation map on desktop shows one constellation at a time, as on phones (Nate chose it). Pulsar map unchanged. Shots: `/mnt/project-files/starwright-constellation-desktop-2026-11-19/` | `components/starwright/star-chart.tsx` | #PR
