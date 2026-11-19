@@ -13,6 +13,7 @@ import { FeaturedCards, FeaturedSkeleton } from "@/components/home/featured-work
 import { GamesShowcase } from "@/components/home/games-showcase";
 import { HeroStats, HeroStatsFallback } from "@/components/home/hero-stats";
 import { RecentPosts } from "@/components/home/recent-posts";
+import { LastCommitLine } from "@/components/home/last-commit";
 import "@/components/home/home.css";
 import { PIXEL_FOR, PixelIcon } from "@/components/cm/pixel-icons";
 
@@ -108,6 +109,7 @@ export default function Home() {
                                     <div><dt>Graduation</dt><dd><Scramble replay text="2031" /></dd></div>
                                 </dl>
                             </div>
+                            <LastCommitLine />
                             <div className="id-foot" aria-hidden="true">
                                 <span className="id-bars"><i /><i /><i /><i /><i /></span>
                                 <span>signal / strong</span>
