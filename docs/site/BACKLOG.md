@@ -8,7 +8,7 @@ Format and rules: `docs/WORKFLOW.md`. Append new items at the end of a section; 
 - [ ] SITE-nodefarm-css-split | L | split Node Farm CSS so panels load on first open: about 290 KB of rules use classes that several modules share, so each split needs a class-ownership pass first | docs/node-farm.md CSS notes
 - [ ] SITE-timeline-overview-phone | S | Timeline is still about 9,400 px at 390; the overview section is 2,038 px and the live phase 2,938 px; trim the overview to reach the 7,000 px target | audit 6
 - [ ] SITE-studies-mobile | M | Studies is 9,400 px at 390 (classes 2,398, reading 1,083, pathway 1,280); same short-card treatment
-- [ ] SITE-creations-detail | M | hero image, short build story, stack and role block, screenshots on each detail page | audit 2 | needs Nate's facts, see below
+- [x] SITE-creations-detail | M | build story and stack and role block on each detail page, built from repo and project facts only; hero is the existing lead (live embed or first shot); the rest of the facts wait on ASK SITE-creations-facts | audit 2 | this PR
 - [x] SITE-speed-transitions | S | route loading card now centred on the viewport (its 450 ms delay never applied: `.ctos .sys-load` did not match the element); nav and game routes warmed when idle (game routes skipped on save-data or 2g/3g); game launch cover 420 to 260 ms | this PR
 - [x] SITE-games-fill-screen | S | game panels fill more of the screen on every game: desktop anchors on the panel title bar (the Play heading scrolls up), frame is 100dvh - 244px, Groundbreak 100dvh - 190px; phones anchor on the title bar and the frame is 100dvh - 300px so the footer clears the tab bar | this PR
 - [x] SITE-launch-progress | S | game launch cover progress is three real steps (request, route, ready) on a segmented track with a live percent, a scan while the route loads, pointer light, and the save line read from this device | this PR
@@ -36,6 +36,7 @@ Format and rules: `docs/WORKFLOW.md`. Append new items at the end of a section; 
 (waiting on a decision, Nate's content or his own device; `ASK` prefix)
 - [ ] ASK SITE-timeline-mobile | M | compact mobile mode for Timeline (11,900 px at 390) and Studies (9,400 px); target Timeline under 7,000 px; Nate has a decision card open (collapse live phase, or short cards with tap for detail); the live phase already starts open and holds about 4,400 px | audit 6
 - [ ] ASK SITE-sfvos-shots | S | sfvOS screenshots and facts for its detail page; do not invent copy
+- [ ] ASK SITE-creations-facts | S | Nate's facts for the Creations detail pages: the stack for Nexus, Deepstack and sfvOS, what Nate built versus others, and a line on what was hard. Each goes into `PROJECT_STORY` in lib/creations-data.ts; never invent | this PR
 - [ ] ASK SITE-gate-seo | S | keep fully private (disallow all in `robots.ts`, drop sitemap) or open OG images, favicon and home metadata only | audit 10
 - [ ] ASK SITE-empty-pages | S | how Renovations and Blog read while empty (zeros and "Nothing here yet"; "Renovations —" in home stats); the pages themselves stay | audit 3
 - [ ] ASK SITE-artwork | M | Artwork pages need Nate's pieces
@@ -117,4 +118,5 @@ Slot for findings from the thread "Audit website code for simplification". That 
 - [x] SITE-code-health-1118 | S | repo sweep 2026-11-18: typecheck clean; engine tests 485 pass, 0 fail, 1 todo; security pass on the gate, /api routes, external links and inline scripts found nothing to fix. Findings logged in Code health above | this PR
 - [x] SITE-home-last-played | S | strip under the home hero shows the game opened last on this device, its save line and Resume or Open; reads the existing save keys, nothing new stored; holds its height before the client read | this PR
 - [x] SITE-home-hero-light | S | soft accent light in the home hero follows a fine pointer; rests still on touch and with reduced motion; the site dither halo steps back while it follows | this PR
+- [x] SITE-timeline-today-bar | S | sticky today bar on Timeline under the top strip: today's date, days to graduation, jumps to Route, Phases and Horizons on desktop (phones keep the date); section anchors clear it | audit 2026-11-19 idea 5 | this PR
 - [x] SITE-dock-name-accent | S | phone dock names the current tab (tag above the dock, under 445 px); the current tab and its plate take the destination section's accent, Home keeps the time-of-day accent | claude/project-thread-cl1ua6 (site-ideas 1 and 3, Nate's pick 2026-11-19)

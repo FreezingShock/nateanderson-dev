@@ -143,3 +143,41 @@
     .tl-page .tl-ev:not([data-open]) .tl-ev-body { display: none !important; }
     .tl-page .tl-ev .tl-ev-body { padding-top: 0; }
 }
+
+/* ==========================================================================
+   Sticky today bar (components/timeline-today-bar.tsx, 2026-11-19). Sits under the naOS top strip, which ends at
+   56px, and stays while the page scrolls. Desktop adds three jumps to the sections; phones keep the date line.
+   Section anchors clear the bar, so a jump lands the heading just below it.
+   ========================================================================== */
+.tl-page { --tl-bar-top: 56px; --tl-bar-h: 38px; }
+.tl-page [id] { scroll-margin-top: calc(var(--tl-bar-top) + var(--tl-bar-h) + 14px); }
+
+.tl-page .tl-today {
+    position: sticky; top: var(--tl-bar-top); z-index: var(--cm-z-ui);
+    display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    min-height: var(--tl-bar-h); padding: 0 var(--cm-gutter);
+    background: var(--cm-ctos-panel);
+    border-bottom: 1px solid var(--cm-hair-hi);
+    font: 700 var(--cm-ctos-t-tag)/1.2 var(--cm-mono);
+    letter-spacing: .12em; text-transform: uppercase; color: var(--cm-dim);
+}
+.tl-page .tl-today-now { display: flex; align-items: baseline; gap: 10px; margin: 0; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tl-page .tl-today-now b { color: var(--sec); font-weight: 800; }
+.tl-page .tl-today-now > span:last-child { color: var(--cm-fg); }
+.tl-page .tl-today-sep { color: var(--cm-hair-hi); }
+
+.tl-page .tl-today-jump { display: flex; align-items: center; gap: 20px; flex: none; }
+.tl-page .tl-today-jump a {
+    display: inline-flex; align-items: baseline; gap: 7px; padding: 8px 0; color: var(--cm-fg); text-decoration: none;
+    transition: color var(--cm-d-base) var(--cm-ease);
+}
+.tl-page .tl-today-jump a > span { color: var(--cm-dim); font-variant-numeric: tabular-nums; }
+.tl-page .tl-today-jump a:hover,
+.tl-page .tl-today-jump a:focus-visible { color: var(--sec); }
+.tl-page .tl-today-jump a:focus-visible { outline: 1px solid var(--sec); outline-offset: 4px; }
+.tl-page .tl-today-jump a:hover > span { color: var(--sec); }
+
+@media (max-width: 760px) {
+    .tl-page .tl-today-jump { display: none; }
+    .tl-page .tl-today { padding: 0 16px; }
+}
