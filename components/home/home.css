@@ -811,3 +811,120 @@ a.hs-commit-link:focus-visible {
     .gs-card, .gs-shot img, .gs-band { transition: none; }
     .gs-card:hover, .gs-card:hover .gs-shot img { transform: none; }
 }
+
+/* Hero light (components/home/hero-light.tsx): a soft accent glow that follows a fine pointer across the hero and
+   rests at one point otherwise. Its size is fixed and its position is a transform, so it never re-lays out the hero. */
+.cm-hero .hero-light {
+    position: absolute;
+    left: 0;
+    top: 0;
+    z-index: 0;
+    width: 920px;
+    height: 920px;
+    margin: -460px 0 0 -460px;
+    border-radius: 50%;
+    pointer-events: none;
+    mix-blend-mode: screen;
+    background: radial-gradient(
+        closest-side,
+        color-mix(in srgb, var(--cm-accent) 30%, transparent),
+        color-mix(in srgb, var(--cm-accent) 10%, transparent) 50%,
+        transparent
+    );
+    opacity: 0.6;
+    transition: opacity var(--cm-d-base) var(--cm-ease);
+    will-change: transform;
+}
+.cm-hero .hero-light[data-state="idle"] {
+    opacity: 0;
+}
+.cm-hero .hero-light[data-state="follow"] {
+    opacity: 1;
+}
+/* While the light is under the pointer, the site-wide dither halo steps back so the two do not stack. */
+.ctos:has(.cm-hero .hero-light[data-state="follow"]) .naos-halo {
+    opacity: 0;
+    transition: opacity var(--cm-d-base) var(--cm-ease);
+}
+
+/* Last played strip (components/home/last-played.tsx), under the hero. */
+.cm-wrap.home-last {
+    padding-block: var(--cm-s5) var(--cm-s7);
+}
+.home-last-panel {
+    display: grid;
+}
+.home-last-panel .hl-body {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--cm-s3) var(--cm-s4);
+    min-height: 84px;
+    padding: var(--cm-s3) var(--cm-s4);
+}
+.home-last-panel .hl-main {
+    display: grid;
+    gap: 6px;
+    flex: 1 1 200px;
+    min-width: 0;
+}
+.home-last-panel .hl-title {
+    font: 800 var(--cm-ctos-t-lead)/1.1 var(--cm-display);
+    letter-spacing: -0.03em;
+    text-transform: lowercase;
+    color: var(--cm-fg);
+}
+.home-last-panel .hl-save {
+    font: 500 var(--cm-ctos-t-small)/1.4 var(--cm-mono);
+    color: var(--cm-mute);
+    overflow-wrap: anywhere;
+}
+.home-last-panel .hl-go {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 44px;
+    padding: 0 14px;
+    border: 1px solid var(--cm-accent);
+    background: var(--cm-accent);
+    color: var(--cm-accent-ink);
+    font: 700 var(--cm-ctos-t-tag)/1 var(--cm-mono);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    flex-shrink: 0;
+    text-decoration: none;
+    transition: filter var(--cm-d-base) var(--cm-ease), transform var(--cm-d-instant) var(--cm-ease-press);
+}
+.home-last-panel .hl-go:hover {
+    filter: brightness(1.12);
+}
+.home-last-panel .hl-go:active {
+    transform: var(--cm-press);
+}
+.home-last-panel .hl-go:focus-visible {
+    outline: 2px solid var(--cm-accent);
+    outline-offset: 3px;
+}
+.home-last-panel .hl-arrow {
+    width: 14px;
+    height: 14px;
+    display: inline-grid;
+    place-items: center;
+    background: currentColor;
+    color: var(--cm-accent-ink);
+}
+.home-last-panel .hl-arrow svg {
+    width: 9px;
+    height: 9px;
+    color: var(--cm-accent);
+}
+@media (max-width: 560px) {
+    .home-last-panel .hl-body {
+        padding: var(--cm-s3);
+    }
+    .home-last-panel .hl-go {
+        padding: 0 12px;
+        gap: 8px;
+    }
+}
