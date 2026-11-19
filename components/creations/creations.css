@@ -278,3 +278,18 @@ html[data-boot="full"] .ctos.cr-sub .cr-id, html[data-boot="quick"] .ctos.cr-sub
 .ctos.cr-hub .cr-doors, .ctos.cr-hub .cr-principles { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 @media (max-width: 1080px) { .ctos.cr-hub .cr-doors, .ctos.cr-hub .cr-principles { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 600px) { .ctos.cr-hub .cr-doors, .ctos.cr-hub .cr-principles { grid-template-columns: minmax(0, 1fr); } }
+
+/* Build story and stack and role: the story reads on the left, the facts sit in a panel on the right. Phones stack them. */
+.cr-story { display: grid; gap: 18px; }
+.cr-story-text { display: grid; gap: 12px; align-content: start; }
+.cr-story-text .cm-lbl { color: var(--cm-mute); }
+.cr-story-text .cm-body { margin: 0; max-width: none; }
+.cr-facts { display: grid; gap: 14px; padding: 0 18px 18px; align-content: start; }
+.cr-facts > .cm-hbar { margin: 0 -18px; }
+.cr-facts-list { display: grid; gap: 14px; margin: 0; }
+.cr-fact { display: grid; gap: 6px; margin: 0; }
+.cr-fact dt { color: var(--cm-mute); }
+.cr-fact dd { margin: 0; font-size: var(--cm-t-body); line-height: 1.5; color: var(--cm-fg); }
+@media (min-width: 900px) {
+  .cr-story { grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); align-items: start; }
+}
