@@ -4,7 +4,8 @@
 // (a neighbouring block differs in brightness). Flat surfaces such as the ground snap to their
 // nearest level instead, so one base tone reads as one tone and the dither stays on edges and
 // paths. Turning dither off keeps the blocky pixels and drops the quantising, which is the
-// readability toggle.
+// readability toggle. Colour at each block seam is blended across about one block (see `soft`), so
+// neighbouring surfaces meet in a soft gradient instead of a hard line.
 import * as THREE from "three";
 
 const vertex = /* glsl */ `
@@ -21,6 +22,7 @@ uniform float uDither;
 uniform float uLevels;
 uniform float uExposure;
 uniform vec2 uTexel;
+uniform vec2 uSize;
 varying vec2 vUv;
 
 // 4x4 ordered-dither threshold, 0..1, from the Bayer matrix.
@@ -38,15 +40,33 @@ vec3 encoded(vec2 uv) {
   return pow(max(c, vec3(0.0)), vec3(1.0 / 2.2)) * uExposure;
 }
 
+// Colour across a block seam. Each block is one flat colour, so a hard nearest sample draws every
+// surface edge as a line. This blends the four nearest block centres, so a seam fades over about one
+// block while block centres stay flat. Interior pixels of a flat block read the same colour, so the
+// pixel look holds. The smoothstep keeps the blend near the seam, not across the whole block.
+vec3 soft(vec2 uv) {
+  vec2 p = uv * uSize - 0.5;
+  vec2 i = floor(p);
+  vec2 f = smoothstep(vec2(0.0), vec2(1.0), p - i);
+  vec2 b = (i + 0.5) / uSize;
+  vec3 c00 = encoded(b);
+  vec3 c10 = encoded(b + vec2(uTexel.x, 0.0));
+  vec3 c01 = encoded(b + vec2(0.0, uTexel.y));
+  vec3 c11 = encoded(b + uTexel);
+  return mix(mix(c00, c10, f.x), mix(c01, c11, f.x), f.y);
+}
+
 void main() {
-  vec3 c = encoded(vUv);
+  // The hard sample decides where the dither edges are; the soft sample is the colour drawn.
+  vec3 hard = encoded(vUv);
+  vec3 c = soft(vUv);
   if (uDither > 0.5) {
     // Edge weight: the largest brightness step to a neighbouring block. Flat areas give ~0 and
     // dither off; edges give ~1 and keep the full Bayer pattern.
-    vec3 d = abs(encoded(vUv + vec2(uTexel.x, 0.0)) - c);
-    d = max(d, abs(encoded(vUv - vec2(uTexel.x, 0.0)) - c));
-    d = max(d, abs(encoded(vUv + vec2(0.0, uTexel.y)) - c));
-    d = max(d, abs(encoded(vUv - vec2(0.0, uTexel.y)) - c));
+    vec3 d = abs(encoded(vUv + vec2(uTexel.x, 0.0)) - hard);
+    d = max(d, abs(encoded(vUv - vec2(uTexel.x, 0.0)) - hard));
+    d = max(d, abs(encoded(vUv + vec2(0.0, uTexel.y)) - hard));
+    d = max(d, abs(encoded(vUv - vec2(0.0, uTexel.y)) - hard));
     float edge = max(d.r, max(d.g, d.b));
     float w = smoothstep(0.012, 0.06, edge);
     float th = mix(0.5, bayer4(floor(gl_FragCoord.xy / uPixel)) + 1.0 / 32.0, w);
@@ -78,6 +98,7 @@ export class PixelDitherPass {
                 uLevels: { value: levels },
                 uExposure: { value: 1.12 },
                 uTexel: { value: new THREE.Vector2(1, 1) },
+                uSize: { value: new THREE.Vector2(1, 1) },
             },
             vertexShader: vertex,
             fragmentShader: fragment,
@@ -96,6 +117,7 @@ export class PixelDitherPass {
         const th = Math.max(1, Math.floor(height / pixelSize));
         this.target.setSize(tw, th);
         this.material.uniforms.uTexel.value.set(1 / tw, 1 / th);
+        this.material.uniforms.uSize.value.set(tw, th);
     }
 
     setDither(on: boolean): void {

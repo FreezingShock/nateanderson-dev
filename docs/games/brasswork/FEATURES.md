@@ -72,7 +72,7 @@ Owners are per area, one thread per file set. The threads: "Streamline Brasswork
 | Sky with sun elevation by clock, stars, moon, shooting stars, cirrus; clouds | working | `render/sky.ts`, `clouds.ts`, `lighting.ts`, `config.ts` | none |
 | Sea: baked shore height map, foam, glints, three palettes (verdigris default, now dark olive-bronze, no teal) | working | `render/water.ts` | none |
 | Horizon islands and night lighthouse beam | working | `render/horizon.ts` | none |
-| Dither post pass (6 levels, pixel 3 CSS px, toggle; the Bayer dither applies only where the picture has an edge, so flat ground snaps to one tone), draws at device pixel ratio up to 2 with the block size kept in CSS px, quality governor | working | `render/postfx.ts`, `governor.ts` | none |
+| Dither post pass (6 levels, pixel 3 CSS px, toggle; the Bayer dither applies only where the picture has an edge, so flat ground snaps to one tone), blends colour across each block seam so surfaces meet in a soft edge (`soft()`), draws at device pixel ratio up to 2 with the block size kept in CSS px, quality governor | working | `render/postfx.ts`, `governor.ts` | none |
 | Machines with working, clock and charge states, hub growth stages 0 to 3, ore node boards | working | `render/models.ts`, `models/machines/`, `models/resources/node.ts` | `machine-models.test.mjs`, `resources.test.mjs` |
 | Belts with moving slats, items riding the belt | working | `models/belts/`, `render/beltitems.ts` | `belts.test.mjs` |
 | Scenery props and life (gulls, butterflies, fish) | working | `models/props/`, `render/scenery.ts`, `render/life/` | none |
