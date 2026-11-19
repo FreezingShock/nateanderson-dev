@@ -196,14 +196,13 @@ export function GameRouteShell({ name, children, header, mode = "framed", game }
             const bottom = bar ? bar.getBoundingClientRect().bottom : 0;
             return bottom > 0 ? bottom + 12 : 72;
         };
-        // On desktop the anchor is the Play section's top rule, not the panel. The section's label and heading sit above the
-        // panel, so anchoring on the panel left "Light your star." under the bar. Desktop fits the whole block below the bar.
-        // Tall phones (760px and up) fit the whole block too, so they anchor on the section as well: the site bar was hiding
-        // "Light your star." on a 390 x 844 phone. Short phones and desktops under 700px tall keep the panel as the anchor.
+        // On tall screens (desktop 700px and up, phones 760px and up) the anchor is the panel's title bar, so the panel can take
+        // nearly the whole screen between the site bar and the dock or the phone tab bar. The Play label and heading scroll up
+        // above it, and the reader can scroll back to them. Short screens keep the panel as the anchor.
         const anchor = () => {
-            const desktopTall = window.matchMedia("(min-width: 761px) and (min-height: 700px)").matches;
-            const phoneTall = window.matchMedia("(max-width: 760px) and (min-height: 760px)").matches;
-            return ((desktopTall || phoneTall) && panelRef.current?.closest<HTMLElement>("section.cm-section")) || panelRef.current;
+            const tall = window.matchMedia("(min-width: 761px) and (min-height: 700px), (max-width: 760px) and (min-height: 760px)").matches;
+            if (tall) return document.querySelector<HTMLElement>(".gs-win-bar") || panelRef.current;
+            return panelRef.current;
         };
         let settle = 0;
         let moved = false;

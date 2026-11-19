@@ -1,7 +1,7 @@
 // Windowed game mode (components/games/shell, mode="windowed") on a production build. For every game with a `window`
 // config, at each of its views (1440, 390 touch and 1366x657 by default):
 //   - the panel mounts under the site chrome and the game root fills the panel (contain: layout)
-//   - desktop: the Play section starts below the site bar, and the panel and its footer fit the viewport and sit above the dock
+//   - desktop: the panel's title bar starts below the site bar, and the panel and its footer fit the viewport and sit above the dock
 //   - short desktop (under 700 px tall): the panel's title bar is the anchor and starts below the site bar
 //   - phone: the panel is scrolled into view. Brasswork on a phone is full screen by design (no title bar or save footer),
 //     so the title-bar and Export checks skip there because those elements are not on the page
@@ -68,28 +68,32 @@ export async function run(env) {
                 // Groundbreak hides the site bar on its route, so its line is the 72px fallback from the shell.
                 const floor = barNow && barNow.bottom > 0 ? barNow.bottom : 0;
                 const line = barNow && barNow.bottom > 0 ? barNow.bottom : 72;
-                // Under 700px tall the panel is the anchor (no Play heading in view), so the panel's title bar starts at the line.
-                const short = view.viewport.height < 700;
-                if (short) {
-                    const winBarNow = await rectOf(page, ".gs-win-bar");
-                    check(suite, winBarNow && winBarNow.top >= floor - 1 && winBarNow.top < line + 30,
-                        `${tag}: panel title bar starts below the site bar on a short screen (title bar ${Math.round(winBarNow?.top ?? -1)}px, line ${Math.round(line)}px)`);
-                } else {
-                    check(suite, sectionNow && sectionNow.top >= floor - 1 && sectionNow.top < line + 30,
-                        `${tag}: Play section starts below the site bar (section ${Math.round(sectionNow?.top ?? -1)}px, line ${Math.round(line)}px)`);
-                }
+                // The anchor is the panel's title bar on desktop (the Play heading scrolls above it, so the panel can fill the screen).
+                const winBarNow = await rectOf(page, ".gs-win-bar");
+                check(suite, winBarNow && winBarNow.top >= floor - 1 && winBarNow.top < line + 30,
+                    `${tag}: panel title bar starts below the site bar (title bar ${Math.round(winBarNow?.top ?? -1)}px, line ${Math.round(line)}px)`);
                 const foot = await rectOf(page, ".gs-win-foot");
                 const dock = await rectOf(page, ".cm-dock");
                 const lowest = Math.max(frame?.bottom ?? 0, foot?.bottom ?? 0);
                 check(suite, lowest <= view.viewport.height, `${tag}: panel and footer fit the viewport (bottom ${Math.round(lowest)}px of ${view.viewport.height}px)`);
                 if (dock && dock.height > 0) check(suite, lowest <= dock.top, `${tag}: panel and footer sit above the site dock (bottom ${Math.round(lowest)}px, dock top ${Math.round(dock.top)}px)`);
             } else {
-                // Tall phones (760px and up) anchor the scroll on the Play section, so its heading shows above the panel (PR #690).
-                // Short phones keep the panel as the anchor.
+                // Tall phones (760px and up) anchor the scroll on the panel's title bar, under the site bar. Short phones keep the panel.
                 const tallPhone = view.viewport.height >= 760;
-                const anchorBox = tallPhone ? sectionNow : frame;
-                check(suite, anchorBox && anchorBox.top >= 0 && anchorBox.top < 180,
-                    `${tag}: ${tallPhone ? "Play section" : "panel"} scrolled into view (top ${Math.round(anchorBox?.top ?? -1)}px)`);
+                if (tallPhone) {
+                    const winBarNow = await rectOf(page, ".gs-win-bar");
+                    const floorNow = barNow && barNow.bottom > 0 ? barNow.bottom : 0;
+                    // Brasswork on a phone is full screen by design (no title bar), so the check skips there.
+                    if (winBarNow) check(suite, winBarNow.top >= floorNow - 1 && winBarNow.top < floorNow + 30,
+                        `${tag}: panel title bar starts below the site bar (title bar ${Math.round(winBarNow?.top ?? -1)}px)`);
+                    const footNow = await rectOf(page, ".gs-win-foot");
+                    const tabNow = await rectOf(page, ".cm-dock");
+                    if (footNow) check(suite, !tabNow || footNow.bottom <= tabNow.top + 1,
+                        `${tag}: panel footer sits above the site tab bar (footer bottom ${Math.round(footNow?.bottom ?? -1)}px, tab bar top ${Math.round(tabNow?.top ?? -1)}px)`);
+                } else {
+                    check(suite, frame && frame.top >= 0 && frame.top < 180,
+                        `${tag}: panel scrolled into view (top ${Math.round(frame?.top ?? -1)}px)`);
+                }
             }
             const minTall = view.viewport.height < 700 ? 260 : 360;
             check(suite, frame && frame.height >= minTall, `${tag}: panel is tall (${Math.round(frame?.height ?? 0)}px)`);

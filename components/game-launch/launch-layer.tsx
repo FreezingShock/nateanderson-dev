@@ -11,7 +11,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Scramble } from "@/components/cm/motion";
 import { allGames } from "@/lib/creations-data";
-import { HUB_PATH, routeSlugOf, writeLastGame } from "@/lib/game-launch/launch";
+import { HUB_PATH, agoLabel, readSaveInfo, routeSlugOf, writeLastGame, type SaveInfo } from "@/lib/game-launch/launch";
 
 type Phase = "idle" | "cover" | "reveal";
 type Target = { to: string; slug: string | null; title: string; accent: string; exit: boolean };
@@ -21,6 +21,10 @@ const REVEAL_MS = 300; // how long the cover takes to fade out after the new rou
 const SAFETY_MS = 8000; // if the route never changes, drop the cover so the page is never stuck
 
 const GAMES = allGames();
+
+// The cover's progress track: three real steps (request sent, route pushed, route in) on a segmented track.
+const STEPS = ["Request", "Route", "Ready"];
+const SEGMENTS = 12;
 
 function targetFor(here: string, url: URL): Target | null {
     const toSlug = routeSlugOf(url.pathname);
@@ -50,6 +54,8 @@ export function GameLaunchLayer() {
     const pathname = usePathname();
     const [phase, setPhase] = useState<Phase>("idle");
     const [target, setTarget] = useState<Target | null>(null);
+    const [step, setStep] = useState(0); // 0 idle, 1 request, 2 route pushed, 3 route in
+    const [save, setSave] = useState<SaveInfo | null>(null);
     const busy = useRef(false);
     const phaseRef = useRef<Phase>("idle");
     const timers = useRef<number[]>([]);
@@ -67,6 +73,7 @@ export function GameLaunchLayer() {
     const finish = useCallback(() => {
         clearTimers();
         busy.current = false;
+        setStep(0);
         setPhaseBoth("idle");
     }, [clearTimers, setPhaseBoth]);
 
@@ -81,6 +88,7 @@ export function GameLaunchLayer() {
         if (!busy.current || phaseRef.current !== "cover") return;
         const wait = prefersReducedMotion() ? 0 : REVEAL_MS;
         clearTimers();
+        setStep(3);
         setPhaseBoth("reveal");
         timers.current.push(window.setTimeout(finish, wait));
     }, [pathname, clearTimers, finish, setPhaseBoth]);
@@ -109,11 +117,13 @@ export function GameLaunchLayer() {
             busy.current = true;
             if (t.slug) writeLastGame(t.slug);
             setTarget(t);
+            setSave(t.slug ? readSaveInfo(t.slug) : null);
+            setStep(1);
             setPhaseBoth("cover");
 
             const coverWait = prefersReducedMotion() ? 0 : COVER_MS;
             clearTimers();
-            timers.current.push(window.setTimeout(() => router.push(t.to), coverWait));
+            timers.current.push(window.setTimeout(() => { setStep(2); router.push(t.to); }, coverWait));
             timers.current.push(window.setTimeout(finish, SAFETY_MS));
         };
         // Window capture runs before the site-wide shutter in motion-root (document capture), so game links
@@ -124,6 +134,11 @@ export function GameLaunchLayer() {
 
     const shown = target ?? { title: "Games", accent: "#2fd8e8", slug: null, exit: true, to: HUB_PATH };
     const code = shown.exit ? "return.games" : `launch.${shown.slug ?? "game"}`;
+    const saveLine = shown.exit
+        ? "Back at the hub. Your progress stays on this device."
+        : save
+          ? `Save found${save.detail ? `: ${save.detail}` : ""}${save.savedAt ? `, saved ${agoLabel(save.savedAt)}` : ""}.`
+          : "No save on this device yet. Starting fresh.";
 
     return (
         <div
@@ -141,10 +156,8 @@ export function GameLaunchLayer() {
                     <span className="gl-state">{phase === "reveal" ? "Ready" : "Loading"}</span>
                 </div>
                 <h2 className="gl-title">{shown.exit ? "Back to Games" : shown.title}</h2>
-                <p className="gl-line">{shown.exit ? "Returning to the hub" : "Starting up. Your save loads with it."}</p>
-                <div className="gl-bar" aria-hidden="true">
-                    <i />
-                </div>
+                <p className="gl-line">{saveLine}</p>
+                <LaunchTrack step={step} exit={shown.exit} />
                 <div className="gl-foot" aria-hidden="true">
                     <span>{shown.exit ? "hub" : "game"}</span>
                     <span>{shown.exit ? "games" : shown.slug}</span>
@@ -154,3 +167,36 @@ export function GameLaunchLayer() {
     );
 }
 
+/** The cover's progress: the segmented track fills as each real step is reached, a scan runs while the route loads,
+ *  and the pointer lights a spot on the track. */
+function LaunchTrack({ step, exit }: { step: number; exit: boolean }) {
+    const filled = [0, 4, 8, 12][step] ?? 0;
+    const onMove = (e: { currentTarget: HTMLDivElement; clientX: number }) => {
+        const r = e.currentTarget.getBoundingClientRect();
+        e.currentTarget.style.setProperty("--gl-x", `${((e.clientX - r.left) / r.width) * 100}%`);
+    };
+    return (
+        <div className="gl-meter" data-step={step}>
+            <div className="gl-meter-top" aria-hidden="true">
+                <span>{exit ? "returning" : "loading"}</span>
+                <span className="gl-pct">{Math.round((filled / SEGMENTS) * 100)}%</span>
+            </div>
+            <div className="gl-track" onPointerMove={onMove} aria-hidden="true">
+                {Array.from({ length: SEGMENTS }, (_, i) => (
+                    <i
+                        key={i}
+                        className={i < filled ? "on" : i === filled && step < 3 ? "cur" : undefined}
+                        style={{ transitionDelay: `${i * 22}ms` }}
+                    />
+                ))}
+            </div>
+            <ol className="gl-steps" aria-hidden="true">
+                {STEPS.map((name, i) => (
+                    <li key={name} className={step >= 3 || step > i + 1 ? "done" : step === i + 1 ? "active" : undefined}>
+                        {String(i + 1).padStart(2, "0")} {name}
+                    </li>
+                ))}
+            </ol>
+        </div>
+    );
+}

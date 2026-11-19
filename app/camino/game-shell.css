@@ -209,10 +209,10 @@ html.gs-game-route {
     contain: layout;
     width: 100%;
     min-width: 0;
-    /* On desktop the Play section (label, heading, title bar, panel, footer) starts under the site bar and ends above the
-       site dock (about 64px at the bottom), so the panel leaves room for all of it. The 400px allowance covers a footer
-       that wraps on narrower desktops. The 260px floor is for screens about 660px tall, where the footer must stay above the dock. Phones use their own height below. */
-    height: clamp(260px, calc(100dvh - 400px), 940px);
+    /* On desktop the scroll anchor is the panel's title bar (game-route-shell.tsx), so the title bar sits just under the site
+       bar and the footer ends above the site dock (about 64px at the bottom). The 244px allowance covers the title bar, the
+       footer and that gap. The 260px floor is for screens about 500px tall. Phones use their own height below. */
+    height: clamp(260px, calc(100dvh - 244px), 940px);
     min-height: 0;
     overflow: hidden;
     background: var(--gs-bg);
@@ -271,7 +271,7 @@ html.gs-game-route {
 /* Groundbreak hides the site bar and the dock on its route, so nothing covers the panel's bottom. Its windows (the Skyline
    row, the bids) need the extra height, so on desktop its panel takes the room the dock would have used. Phones keep the rule above. */
 @media (min-width: 761px) {
-    .gs-windowed[data-game="Groundbreak"] .gs-frame { height: clamp(360px, calc(100dvh - 330px), 940px); }
+    .gs-windowed[data-game="Groundbreak"] .gs-frame { height: clamp(360px, calc(100dvh - 190px), 940px); }
 }
 
 /* Desktop under 700px tall: the panel is the scroll anchor (game-route-shell.tsx), so it starts under the site bar and takes
@@ -280,9 +280,10 @@ html.gs-game-route {
     .gs-windowed:not([data-game="Groundbreak"]) .gs-frame { height: clamp(300px, calc(100dvh - 240px), 940px); }
 }
 
-/* Phones: the site's bottom tab bar sits over the bottom of the screen, so the panel leaves room for it and for the footer. */
+/* Phones: the title bar is the anchor (game-route-shell.tsx), so the panel sits under the site bar and leaves room for its
+   footer and the site's bottom tab bar. */
 @media (max-width: 760px) {
-    .gs-frame { height: clamp(360px, calc(100dvh - 340px), 940px); }
+    .gs-frame { height: clamp(360px, calc(100dvh - 300px), 940px); }
     .gs-win-hint { display: none; }
     .gs-win-title h3 { font-size: 14px; }
 }

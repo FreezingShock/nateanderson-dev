@@ -144,34 +144,140 @@
     color: var(--gl-dim);
 }
 
-.gl-bar {
-    position: relative;
+/* Launch progress: three real steps on a segmented track. Segments fill as each step is reached, a scan runs while the
+   route loads, and the pointer lights a spot on the track. Only opacity and transform animate. */
+.gl-meter {
     margin-top: 18px;
-    height: 6px;
-    background: rgba(233, 241, 242, 0.08);
-    overflow: hidden;
 }
 
-.gl-bar i {
+.gl-meter-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--gl-dim);
+}
+
+.gl-pct {
+    color: var(--gl-ink);
+    font-variant-numeric: tabular-nums;
+}
+
+.gl-track {
+    --gl-x: 50%;
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap: 3px;
+    margin-top: 8px;
+    height: 14px;
+    overflow: hidden;
+    cursor: crosshair;
+}
+
+.gl-track::before {
+    content: "";
     position: absolute;
     inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    background: radial-gradient(circle at var(--gl-x) 50%, rgba(233, 241, 242, 0.2), transparent 40%);
+    opacity: 0;
+    transition: opacity var(--cm-d-base) var(--cm-ease);
+}
+
+.gl-track:hover::before {
+    opacity: 1;
+}
+
+.gl-track::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: 18%;
+    z-index: 1;
+    pointer-events: none;
+    background: linear-gradient(90deg, transparent, rgba(233, 241, 242, 0.32), transparent);
+    transform: translate3d(-100%, 0, 0);
+}
+
+.gl-meter[data-step="1"] .gl-track::after,
+.gl-meter[data-step="2"] .gl-track::after {
+    animation: gl-scan 1.1s var(--cm-ease-cut) infinite;
+}
+
+@keyframes gl-scan {
+    to { transform: translate3d(560%, 0, 0); }
+}
+
+.gl-track i {
+    display: block;
+    background: rgba(233, 241, 242, 0.09);
+    transform: scaleY(0.55);
+    transition: background-color var(--cm-d-base) var(--cm-ease), transform var(--cm-d-base) var(--cm-ease);
+}
+
+.gl-track i.on {
     background: var(--gl-accent);
-    transform: scaleX(0);
-    transform-origin: left center;
+    transform: none;
 }
 
-.gl-layer[data-phase="cover"] .gl-bar i {
-    animation: gl-fill 420ms cubic-bezier(0.4, 0, 0.2, 1) both;
+.gl-track i.cur {
+    background: rgba(233, 241, 242, 0.22);
+    animation: gl-cur 0.6s steps(1, end) infinite;
 }
 
-.gl-layer[data-phase="reveal"] .gl-bar i {
-    transform: scaleX(1);
+@keyframes gl-cur {
+    50% { opacity: 0.35; }
 }
 
-@keyframes gl-fill {
-    from { transform: scaleX(0); }
-    to { transform: scaleX(1); }
+.gl-steps {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+    margin: 10px 0 0;
+    padding: 0;
+    list-style: none;
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--gl-dim);
 }
+
+.gl-steps li {
+    position: relative;
+    padding-left: 12px;
+    transition: color var(--cm-d-base) var(--cm-ease);
+}
+
+.gl-steps li::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0.35em;
+    width: 6px;
+    height: 6px;
+    background: rgba(233, 241, 242, 0.22);
+    transition: background-color var(--cm-d-base) var(--cm-ease);
+}
+
+.gl-steps li.active {
+    color: var(--gl-ink);
+}
+
+.gl-steps li.active::before,
+.gl-steps li.done::before {
+    background: var(--gl-accent);
+}
+
+.gl-steps li.done {
+    color: var(--gl-ink);
+}
+
 
 .gl-foot {
     display: flex;
@@ -235,13 +341,16 @@
     }
 
     .gl-layer[data-phase="cover"] .gl-sweep,
-    .gl-layer[data-phase="cover"] .gl-bar i {
+    .gl-track::after,
+    .gl-track i.cur {
         animation: none;
     }
 
-    .gl-layer[data-phase="cover"] .gl-bar i,
-    .gl-layer[data-phase="reveal"] .gl-bar i {
-        transform: scaleX(1);
+    .gl-track i,
+    .gl-track::before,
+    .gl-steps li,
+    .gl-steps li::before {
+        transition: none;
     }
 
     .gl-layer[data-phase="reveal"] {
