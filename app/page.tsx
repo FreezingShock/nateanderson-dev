@@ -12,6 +12,8 @@ import { TimelinePreview } from "@/components/home/timeline-preview";
 import { FeaturedCards, FeaturedSkeleton } from "@/components/home/featured-work";
 import { GamesShowcase } from "@/components/home/games-showcase";
 import { HeroStats, HeroStatsFallback } from "@/components/home/hero-stats";
+import { HeroLight } from "@/components/home/hero-light";
+import { LastPlayed, type PlayedGame } from "@/components/home/last-played";
 import { RecentPosts } from "@/components/home/recent-posts";
 import "@/components/home/home.css";
 import { PIXEL_FOR, PixelIcon } from "@/components/cm/pixel-icons";
@@ -35,6 +37,9 @@ export const metadata = { alternates: { canonical: "/" } };
 // the hero and every section paint at once and the cards stream in when Supabase answers.
 export default function Home() {
     const playable = allGames().filter((g) => g.status === "playable").length;
+    const played: PlayedGame[] = allGames().flatMap((g) =>
+        g.href?.startsWith("/creations/games/") ? [{ slug: g.slug, title: g.title, href: g.href }] : [],
+    );
 
     return (
         <div className="ctos" data-entrance="dither">
@@ -45,6 +50,7 @@ export default function Home() {
                 <div className="cm-persp" aria-hidden="true" />
                 <NaosArt src="/naos/islands.webp" width={300} height={200} variant="hero" eager />
                 <div className="ring" aria-hidden="true" data-mx-par="0.12" />
+                <HeroLight />
                 <div className="cm-wrap">
                     <div className="hero-grid">
                         <div className="hero-copy cm-stage">
@@ -117,6 +123,8 @@ export default function Home() {
                     </div>
                 </div>
             </header>
+
+            <LastPlayed games={played} />
 
             <Section
                     ctos
