@@ -14,6 +14,7 @@ Format: `- area | paths | owner (thread title or "free") | since YYYY-MM-DD | do
 - Site motion on home and non-game pages (hover life for toned card art) | app/camino/site-motion.css | Animate homepage and site pages | 2026-11-16 | docs/site
 - Route loading panel, route warm-up and game launch cover | app/system/system-naos.css (`.sys-load` only), components/cm/motion-root.tsx (warm-up effect only), components/game-launch/*, app/camino/game-launch.css, app/camino/transition.css (strip rules only), `.gs-frame` height and the title-bar anchor in app/camino/game-shell.css and components/games/shell/game-route-shell.tsx | Speed up game loads and page transitions | 2026-11-19 | docs/site
 - Gate, SEO, CI, deploy | proxy.ts, lib/gate, lib/seo.ts, .github, scripts/ci, vercel.json | Unify game check scripts | 2026-11-16 | docs/deploys.md, docs/ci.md
+- Timeline sticky today bar | components/timeline-today-bar.tsx, the `.tl-today` block at the end of app/timeline/timeline.css, the bar line in app/timeline/page.tsx | Add a sticky today bar to Timeline | 2026-11-19 | docs/site
 
 ## Games
 - Brasswork | components/{brasswork,brasswork-ui,brasswork-art,automation}, lib/{brasswork,automation}, tests/automation, scripts/{brasswork,automation} | Ship the Brasswork backlog; phone layout and camera pad | 2026-11-15 | docs/games/brasswork
