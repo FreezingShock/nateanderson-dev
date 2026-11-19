@@ -34,7 +34,7 @@ Current state of the site outside the three games with their own docs (Brasswork
 - History `/history`: commit history from GitHub, live.
 - Blog `/blog`, `/blog/[slug]`: category sections and post pages, driven by `lib/blog.ts`. Currently no posts; the empty page stays visible by Nate's decision. Philosophy and Politics writing will go here.
 - Creations `/creations`: hub with Games, Projects, Renovations, Artwork. Featured order Nexus, Deepstack, sfvOS; grid 4 across at 1080px and up, then 2x2, then 1.
-- Creations detail `/creations/[slug]`: one paragraph, meta card, tags, GitHub link (thin; see backlog). Nexus embeds playnexus.dev (public parts only), loaded behind a deferred frame.
+- Creations detail `/creations/[slug]`: lead (live Nexus embed, or the first screenshot, or a status plate), then a build story with a stack and role panel (`PROJECT_STORY` in `lib/creations-data.ts`, facts only from the repo, the project's copy and its shots), then the details sheet, gallery and previous or next. Nexus embeds playnexus.dev (public parts only), loaded behind a deferred frame. sfvOS has no screenshots yet, so its lead is the plate.
 - Renovations `/creations/renovations`, Artwork `/creations/artwork`, Projects `/creations/projects`: Renovations is empty and visible by decision; Artwork waits on Nate's pieces.
 - 404 and error pages: branded.
 - Share images: `opengraph-image.tsx` on `/`, about, blog, creations, creations detail, history, studies and timeline. `robots.ts` allows everything and lists the sitemap; `sitemap.ts` has only the home page. All of it sits behind the gate (decision pending, see backlog `SITE-gate-seo`).

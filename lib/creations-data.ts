@@ -128,6 +128,52 @@ export const PROJECT_PREVIEW: Record<string, { src: string; title: string }> = {
     nexus: { src: "https://playnexus.dev", title: "Nexus, live" },
 };
 
+// ---- Build stories for project pages ----
+// Each story uses only facts the repo, the project's own copy (lib/about-data.ts, its row) or its screenshots already
+// state. Anything else (the stack, who built what, what was hard) is not written here: it waits on Nate, see
+// docs/site/BACKLOG.md (ASK SITE-creations-facts). A row with no entry gets no story block.
+
+export interface ProjectStory {
+    /** One to three short paragraphs, plain and factual. */
+    story: string[];
+    /** Stack and role rows. Only rows with a known fact appear. */
+    facts: { k: string; v: string }[];
+}
+
+export const PROJECT_STORY: Record<string, ProjectStory> = {
+    nexus: {
+        story: [
+            "Nexus is a town builder that runs in the browser, and the live game is embedded on its page. The build menu is the core of it: roads, zones, buildings, services, parks and terrain sit along the bottom of the screen, with coins and residents at the top.",
+            "The embed loads after the page does, so the rest of the page is not held up by the game.",
+        ],
+        facts: [
+            { k: "Runs in", v: "The browser" },
+            { k: "Live", v: "playnexus.dev" },
+        ],
+    },
+    deepstack: {
+        story: [
+            "Deepstack asks you to explain a hard word in your own words. Your answer is judged on accuracy, becomes a page in a book, and drops you one step deeper into an endless library.",
+            "Each word sits on a desk with a candle: write its meaning before the candle burns down. Between words, a landing offers three ways on, each with a cost, and the sidebar shows your depth and floor.",
+        ],
+        facts: [
+            { k: "Shown on", v: "Desktop" },
+            { k: "Code", v: "Public on GitHub" },
+        ],
+    },
+    sfvos: {
+        story: [
+            "sfvOS is a live city builder on real San Fernando Valley open data. You open a neighborhood, then rebuild its real streets, lots and buildings.",
+            "It is still in development. Screenshots are coming and will go in the gallery below once they are ready.",
+        ],
+        facts: [
+            { k: "Status", v: "In development" },
+            { k: "Data", v: "Real San Fernando Valley open data" },
+            { k: "Code", v: "Public on GitHub" },
+        ],
+    },
+};
+
 // ---- Philosophy (draft copy: Nate to rewrite in his own voice) ----
 
 export interface Principle {
