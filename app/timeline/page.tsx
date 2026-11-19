@@ -3,6 +3,7 @@ import { NaosBackdrop } from "@/components/cm/naos-art";
 import { Scramble } from "@/components/cm/motion";
 import { TimelineOverview } from "@/components/timeline-overview";
 import { TimelineExplorer } from "@/components/timeline-explorer";
+import { TimelineTodayBar } from "@/components/timeline-today-bar";
 import { phases } from "@/lib/timeline-data";
 import "./timeline.css";
 import { pageMeta } from "@/lib/seo";
@@ -48,6 +49,7 @@ export default function TimelinePage() {
     return (
         <div className="ctos tl-page" data-entrance="tick">
             <NaosBackdrop src="/naos/bg-timeline.webp" />
+            <TimelineTodayBar nowMs={nowMs} />
             <PageHead
                 label="Journey"
                 title={["Timeline"]}
