@@ -16,6 +16,7 @@ Format: `- area | paths | owner (thread title or "free") | since YYYY-MM-DD | do
 - Gate, SEO, CI, deploy | proxy.ts, lib/gate, lib/seo.ts, .github, scripts/ci, vercel.json | Unify game check scripts | 2026-11-16 | docs/deploys.md, docs/ci.md
 - naOS status panel on the home hero (last-commit line, panel layout on phones) | components/home/last-commit.tsx, the `.hero-status` and `.hs-commit` rules in components/home/home.css, the `aside.hero-status` block in app/page.tsx | Show the last commit in naOS status | 2026-11-19 | docs/site
 - Timeline sticky today bar | components/timeline-today-bar.tsx, the `.tl-today` block at the end of app/timeline/timeline.css, the bar line in app/timeline/page.tsx | Add a sticky today bar to Timeline | 2026-11-19 | docs/site
+- Timeline sticky today bar | components/timeline-today-bar.tsx, the `.tl-today` block at the end of app/timeline/timeline.css, the bar line in app/timeline/page.tsx | free (shipped in #725, 2026-11-19) | 2026-11-19 | docs/site
 - Phone dock names and section-accent tabs | components/cm/bar.tsx (`Dock` and `tabTone` only), app/camino/nav-naos.css (`.cm-dock` rules only) | Label and color the phone dock | 2026-11-19 | docs/site
 
 ## Games
