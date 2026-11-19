@@ -17,7 +17,7 @@ Current state of the site outside the three games with their own docs (Brasswork
 - Motion scale: one set of easing and duration tokens in `app/camino/camino.tokens.css` (Motion). Buttons, chips and cards lift on hover (`--cm-lift`) and press down on click (`--cm-press`). One reduced-motion rule there finishes every transition and animation at once.
 - Card art hover: the pixel art behind toned cards (Explore, the Creations hub, About) lifts 8px and brightens on pointer hover; colour only under reduced motion (`app/camino/site-motion.css`, loaded last after `micro.css`).
 - Dithered art: `NaosBackdrop` per page, header bands and washes (`components/cm/naos-art.tsx`, `scripts/naos-art/`).
-- Navigation: top bar, floating dock (7 items, labels 11px on phones), site map, `/` launcher; all read `lib/nav.ts`, which also pulls games from `lib/creations-data.ts`.
+- Navigation: top bar, floating dock (7 items, labels 11px on phones), site map, `/` launcher; all read `lib/nav.ts`, which also pulls games from `lib/creations-data.ts`. The current tab and its plate take the section accent (`SECTION_ACCENT` in `lib/section-accent.ts`; Home keeps the time-of-day accent). On phones under 445 px the current tab's name shows as a tag above the dock; other tabs stay icon-only. Code: `components/cm/bar.tsx` (`Dock`, `tabTone`), `app/camino/nav-naos.css` (`.cm-dock` rules).
 - Console (backtick or Ctrl/Cmd+J): commands including `nf` for Node Farm and per-game commands. Help lists two-line entries that wrap at `|`.
 - Search: `/` opens fuzzy search (`lib/search`).
 - Sound: provider and engine in `components/sound-provider.tsx`, `lib/sound`; default state shown in the top bar. Audio is untested by any thread.
