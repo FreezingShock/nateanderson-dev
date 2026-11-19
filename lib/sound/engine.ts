@@ -1,3 +1,4 @@
+import { audioContextClass, makeRoomImpulse } from "@/lib/audio/room";
 // The site's sound engine: every sound is synthesized with the Web Audio API (no audio files), from one small voice
 // family so the whole site sounds like one instrument. Soft sine and triangle tones with a gentle attack, low-passed
 // so nothing is bright or clicky, notes taken from a single pentatonic scale so quick sequences stay pleasant, and a
@@ -64,25 +65,14 @@ export function setPrefs(p: Partial<Prefs>) {
 type Graph = { ctx: AudioContext; master: GainNode; ui: GainNode; game: GainNode; dry: GainNode; wet: GainNode; noise: AudioBuffer };
 let g: Graph | null = null;
 
+// A short, dark synthetic room (see lib/audio/room.ts).
 function impulse(ctx: AudioContext) {
-    // A short, dark synthetic room: decaying noise, low-passed by averaging.
-    const len = Math.floor(ctx.sampleRate * 0.9);
-    const b = ctx.createBuffer(2, len, ctx.sampleRate);
-    for (let c = 0; c < 2; c++) {
-        const d = b.getChannelData(c);
-        let last = 0;
-        for (let i = 0; i < len; i++) {
-            const white = Math.random() * 2 - 1;
-            last = last * 0.82 + white * 0.18;
-            d[i] = last * Math.pow(1 - i / len, 2.6);
-        }
-    }
-    return b;
+    return makeRoomImpulse(ctx, { seconds: 0.9, pole: 0.82, decay: 2.6 });
 }
 
 function build(): Graph | null {
     if (typeof window === "undefined") return null;
-    const AC = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    const AC = audioContextClass();
     if (!AC) return null;
     const ctx = new AC({ latencyHint: "interactive" });
     const master = ctx.createGain();
