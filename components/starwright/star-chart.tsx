@@ -73,7 +73,8 @@ export function StarChart({ title, list, owned, cur, curName, onBuy, onClose, co
         return () => ro.disconnect();
     }, []);
     const [reg, setReg] = useState(0);
-    const regions = narrow && constellations ? CONSTELLATIONS.map((c) => c.id as string) : [];
+    // Constellation map: one constellation at a time on every screen (phones and desktop alike); the pulsar map stays whole.
+    const regions = constellations ? CONSTELLATIONS.map((c) => c.id as string) : [];
     const region = regions.length ? Math.min(reg, regions.length - 1) : -1;
     const bg = useRef<HTMLCanvasElement | null>(null);
     const svgRef = useRef<SVGSVGElement | null>(null);
@@ -95,9 +96,9 @@ export function StarChart({ title, list, owned, cur, curName, onBuy, onClose, co
     const stateOf = (p: Perk): St => (owned.includes(p.id) ? "own" : perkReady(list, owned, p) ? (cur >= p.cost ? "buy" : "near") : "lock");
     const desig = (p: Perk) => `${GREEK[list.filter((x) => x.con === p.con).indexOf(p)] ?? ""} ${LATIN[p.con] ?? ""}`;
     const picked = list.find((p) => p.id === sel) ?? null;
-    // The part of the sky on screen: all of it on a wide screen, one constellation (or the whole pulsar map) on a phone.
+    // The part of the sky on screen: one constellation at a time on the constellation map, the whole pulsar map on a wide screen.
     const vb = (() => {
-        if (!narrow) return { x: 0, y: 0, w: 1000, h: 600 };
+        if (region < 0 && !narrow) return { x: 0, y: 0, w: 1000, h: 600 };
         const part = region >= 0 ? list.filter((p) => p.con === regions[region]) : list;
         const xs = part.map((p) => P(p)[0]), ys = part.map((p) => P(p)[1]);
         const x0 = Math.min(...xs) - 95, x1 = Math.max(...xs) + 95;
