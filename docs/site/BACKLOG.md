@@ -13,6 +13,8 @@ Format and rules: `docs/WORKFLOW.md`. Append new items at the end of a section; 
 - [x] SITE-games-fill-screen | S | game panels fill more of the screen on every game: desktop anchors on the panel title bar (the Play heading scrolls up), frame is 100dvh - 244px, Groundbreak 100dvh - 190px; phones anchor on the title bar and the frame is 100dvh - 300px so the footer clears the tab bar | this PR
 - [x] SITE-launch-progress | S | game launch cover progress is three real steps (request, route, ready) on a segmented track with a live percent, a scan while the route loads, pointer light, and the save line read from this device | this PR
 - [x] SITE-page-strip | S | the accent strip on the page-switch panels hides while they close and the seam holds, and returns as they open | this PR
+- [x] SITE-window-chrome | S | game window chrome per game: back link in the title bar, themed title bar and footer (brass, Starwright, Groundbreak), icon-only Export and Import save with tooltips, status light, restyled bottom-right hint | this PR
+- [x] SITE-brasswork-top-row | S | Brasswork top bar resource tiles stay on one row from 760 px to wide desktop (no nowrap-wrap of the parts list; narrow desktops zoom the strip) | this PR
 
 ## Next
 (open, not waiting on Nate)
