@@ -1,11 +1,11 @@
 /* naOS dithered art: decorative 1-bit PNGs. Scoped to .naos-art so no other page is affected. */
 .naos-art { position: relative; pointer-events: none; user-select: none; }
 /* The dither art is a 1-bit alpha PNG/WebP: its ink pixels are opaque, the rest transparent. Each piece is drawn as a
-   mask and filled with --cm-accent, so it takes the time-of-day accent (lib/accent.ts) and eases with it. The image is
+   mask and filled with --art (the division colour, or the time accent on home), so it takes the time-of-day accent (lib/accent.ts) and eases with it. The image is
    set per piece in --naos-art. */
 .naos-art-ink {
   display: block; width: 100%; height: auto; aspect-ratio: var(--ar, 3 / 2);
-  background: var(--cm-accent);
+  background: var(--art);
   -webkit-mask: var(--naos-art) center / 100% 100% no-repeat; mask: var(--naos-art) center / 100% 100% no-repeat;
   image-rendering: pixelated; image-rendering: crisp-edges;
 }
@@ -57,7 +57,7 @@
    overscan. The mask stays on .naos-backdrop, so the fade keeps its geometry. */
 .naos-backdrop-art {
   position: absolute; inset: -64px; pointer-events: none;
-  background: var(--cm-accent);
+  background: var(--art);
   -webkit-mask-image: var(--naos-art); mask-image: var(--naos-art);
   -webkit-mask-position: center 64px; mask-position: center 64px;
   -webkit-mask-size: max(1440px, 100vw) auto; mask-size: max(1440px, 100vw) auto;
@@ -68,7 +68,7 @@
    as the art fades in, so the page is never blank and the art never snaps in. */
 .naos-backdrop-ground {
   position: fixed; inset: 0; z-index: -1; pointer-events: none;
-  background: radial-gradient(circle, color-mix(in srgb, var(--cm-accent) 16%, transparent) 0 30%, transparent 34%) 0 0 / 6px 6px;
+  background: radial-gradient(circle, color-mix(in srgb, var(--art) 16%, transparent) 0 30%, transparent 34%) 0 0 / 6px 6px;
   -webkit-mask-image: radial-gradient(ellipse 75% 85% at 82% 18%, #000 0, rgba(0, 0, 0, .55) 45%, transparent 92%);
   mask-image: radial-gradient(ellipse 75% 85% at 82% 18%, #000 0, rgba(0, 0, 0, .55) 45%, transparent 92%);
   opacity: .6; transition: opacity 700ms ease-out;
@@ -109,14 +109,14 @@
 .naos-halo {
   inset: auto; left: 0; top: 0; width: 300px; height: 300px; opacity: 0; will-change: transform;
   transition: opacity 420ms ease-out;
-  background: radial-gradient(circle, color-mix(in srgb, var(--cm-accent) 50%, transparent) 0 30%, transparent 34%) 0 0 / 6px 6px;
+  background: radial-gradient(circle, color-mix(in srgb, var(--art) 50%, transparent) 0 30%, transparent 34%) 0 0 / 6px 6px;
   -webkit-mask-image: radial-gradient(circle closest-side, #000 0, rgba(0, 0, 0, .6) 40%, transparent 100%);
   mask-image: radial-gradient(circle closest-side, #000 0, rgba(0, 0, 0, .6) 40%, transparent 100%);
 }
 .naos-halo.is-on { opacity: .8; }
 .naos-ripple {
   position: absolute; width: 240px; height: 240px; margin: -120px 0 0 -120px; border-radius: 50%;
-  background: radial-gradient(circle, color-mix(in srgb, var(--cm-accent) 70%, transparent) 0 30%, transparent 34%) 0 0 / 6px 6px;
+  background: radial-gradient(circle, color-mix(in srgb, var(--art) 70%, transparent) 0 30%, transparent 34%) 0 0 / 6px 6px;
   -webkit-mask-image: radial-gradient(circle closest-side, transparent 76%, #000 84%, #000 92%, transparent 100%);
   mask-image: radial-gradient(circle closest-side, transparent 76%, #000 84%, #000 92%, transparent 100%);
   animation: naos-ripple-out 900ms steps(9, end) both; pointer-events: none;
@@ -139,13 +139,13 @@
    A band sits behind each page title on the right and fades toward the left; each page family gets its own variant.
    A wash sits behind each ruled section, fading across it; sections rotate through the four washes. Both sit at
    z-index -1 inside .ctos, so they paint over the backdrop and under the content.
-   The art is a mask filled with --cm-accent. Each mask layer is intersected with the existing fade, so the fade and
+   The art is a mask filled with --art (the division colour, or the time accent on home). Each mask layer is intersected with the existing fade, so the fade and
    the art keep their geometry. The art is set per variant in --band-art or --wash-art. */
 .ctos .cm-head::before {
   content: ""; position: absolute; z-index: -1; right: 0; top: 50%; transform: translateY(-50%);
   width: 100%; height: 192px; pointer-events: none;
   --band-art: url("/naos/band-track.webp"); --band-size: 960px 192px;
-  background: var(--cm-accent); image-rendering: pixelated; opacity: .42;
+  background: var(--art); image-rendering: pixelated; opacity: .42;
   -webkit-mask-image: var(--band-art), linear-gradient(270deg, #000 35%, transparent 100%);
           mask-image: var(--band-art), linear-gradient(270deg, #000 35%, transparent 100%);
   -webkit-mask-composite: source-in; mask-composite: intersect;
@@ -171,7 +171,7 @@
 .ctos .cm-section.ruled::before {
   content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none;
   --wash-art: url("/naos/wash-a.webp"); --wash-size: 720px 480px;
-  background: var(--cm-accent); image-rendering: pixelated; opacity: .3;
+  background: var(--art); image-rendering: pixelated; opacity: .3;
   -webkit-mask-image: var(--wash-art), linear-gradient(90deg, transparent 0, #000 24%, #000 60%, transparent 98%),
                       linear-gradient(180deg, transparent 0, #000 14%, #000 38%, transparent 90%);
   -webkit-mask-composite: source-in;
