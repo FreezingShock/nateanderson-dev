@@ -4,6 +4,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef } from "react";
 import { markNavigation, motionOn, scan, start, subscribeMotion } from "@/lib/motion/engine";
 import { NAV_EVENT } from "@/lib/motion/navigate";
+import { allGames } from "@/lib/creations-data";
 import { navItems } from "@/lib/nav";
 
 type Dir = "fwd" | "back" | "down" | "up";
@@ -69,6 +70,23 @@ export function MotionRoot() {
     });
     const first = useRef(true);
     const wipe = useRef<HTMLDivElement>(null);
+
+    // Warm the routes once the first page is up, so a switch or a game launch finds its payload already loaded.
+    // Nav sections always; game routes only on a connection that can take the extra JS (not save-data, not 2g/3g).
+    useEffect(() => {
+        const conn = (navigator as Navigator & { connection?: { saveData?: boolean; effectiveType?: string } }).connection;
+        const fast = !conn?.saveData && !/2g|3g/.test(conn?.effectiveType ?? "4g");
+        const warmAll = () => {
+            navItems.forEach((n) => router.prefetch(n.href));
+            if (fast) allGames().forEach((g) => g.href && router.prefetch(g.href));
+        };
+        if (typeof window.requestIdleCallback !== "function") {
+            const t = window.setTimeout(warmAll, 1200);
+            return () => window.clearTimeout(t);
+        }
+        const id = window.requestIdleCallback(warmAll, { timeout: 2500 });
+        return () => window.cancelIdleCallback(id);
+    }, [router]);
 
     // Motion switched off mid-transition: drop the curtain at once.
     useEffect(() => subscribeMotion(() => { if (!motionOn()) reset.current(); }), []);

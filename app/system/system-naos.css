@@ -90,12 +90,23 @@
 }
 
 /* ---- Route loading: a status card that waits 450ms before it shows, so quick navigations never flash it ---------- */
-.ctos .sys-load {
+/* Centred on the viewport, on the same curtain layer as the game cover (app/camino/game-launch.css), so it
+   sits in the middle of the screen on desktop and phone. The site dock still lifts above it. */
+.ctos.sys-load {
+    position: fixed;
+    inset: 0;
+    z-index: var(--cm-z-curtain);
+    display: grid;
+    place-items: center;
+    padding: 16px;
+    background: rgba(6, 8, 10, 0.94);
     opacity: 0;
     animation: sys-show var(--cm-d-enter) ease 0.45s both;
 }
-.ctos .sys-load .sys-body {
-    padding-top: var(--cm-s7);
+.sys-load .sys-body {
+    width: min(640px, 100%);
+    margin: 0;
+    padding: 0;
 }
 .ctos .sys-track {
     position: relative;
@@ -136,7 +147,7 @@
         transform: none;
         width: 50%;
     }
-    .ctos .sys-load {
+    .ctos.sys-load {
         animation-duration: 0.01s;
     }
 }

@@ -38,7 +38,7 @@ Current state of the site outside the three games with their own docs (Brasswork
 - Renovations `/creations/renovations`, Artwork `/creations/artwork`, Projects `/creations/projects`: Renovations is empty and visible by decision; Artwork waits on Nate's pieces.
 - 404 and error pages: branded.
 - Share images: `opengraph-image.tsx` on `/`, about, blog, creations, creations detail, history, studies and timeline. `robots.ts` allows everything and lists the sitemap; `sitemap.ts` has only the home page. All of it sits behind the gate (decision pending, see backlog `SITE-gate-seo`).
-- Also in `app`: `manifest.ts`, `loading.tsx`, `global-error.tsx`.
+- Also in `app`: `manifest.ts`, `loading.tsx` (a status card centred on the viewport, shown after 450 ms, on the curtain layer), `global-error.tsx`. Route warm-up: `components/cm/motion-root.tsx` prefetches the nav sections when idle, and the game routes too on a connection that is not 2g, 3g or save-data.
 
 ## Games hub and shared game code
 - Hub `/creations/games`: sections Geography, Incremental, Automation; acts as a launcher. Each card is themed in its game's colour (`accent` in `lib/creations-data.ts`) and shows a screenshot of the game inset in a dark frame (`public/games/shots/*.webp`, `shot`; Brasswork, Starwright and Groundbreak are clean scenes, Node Farm and both guessers show their own in-game panels), the pitch, short tag panels (`tags`), a status line (status and section) and a Play bar. Two cards across, three across for three games (`components/games/naos.tsx`, styles in `app/camino/games.css`).

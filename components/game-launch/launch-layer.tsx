@@ -16,8 +16,8 @@ import { HUB_PATH, routeSlugOf, writeLastGame } from "@/lib/game-launch/launch";
 type Phase = "idle" | "cover" | "reveal";
 type Target = { to: string; slug: string | null; title: string; accent: string; exit: boolean };
 
-const COVER_MS = 420; // how long the cover takes to fade in before the route changes
-const REVEAL_MS = 380; // how long the cover takes to fade out after the new route is in
+const COVER_MS = 260; // how long the cover takes to fade in before the route changes
+const REVEAL_MS = 300; // how long the cover takes to fade out after the new route is in
 const SAFETY_MS = 8000; // if the route never changes, drop the cover so the page is never stuck
 
 const GAMES = allGames();

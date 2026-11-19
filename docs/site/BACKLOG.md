@@ -9,6 +9,7 @@ Format and rules: `docs/WORKFLOW.md`. Append new items at the end of a section; 
 - [ ] SITE-timeline-overview-phone | S | Timeline is still about 9,400 px at 390; the overview section is 2,038 px and the live phase 2,938 px; trim the overview to reach the 7,000 px target | audit 6
 - [ ] SITE-studies-mobile | M | Studies is 9,400 px at 390 (classes 2,398, reading 1,083, pathway 1,280); same short-card treatment
 - [ ] SITE-creations-detail | M | hero image, short build story, stack and role block, screenshots on each detail page | audit 2 | needs Nate's facts, see below
+- [x] SITE-speed-transitions | S | route loading card now centred on the viewport (its 450 ms delay never applied: `.ctos .sys-load` did not match the element); nav and game routes warmed when idle (game routes skipped on save-data or 2g/3g); game launch cover 420 to 260 ms | this PR
 
 ## Next
 (open, not waiting on Nate)

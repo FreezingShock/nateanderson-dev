@@ -12,6 +12,7 @@ Format: `- area | paths | owner (thread title or "free") | since YYYY-MM-DD | do
 - Creations and games hub | app/creations (not games/*), components/creations, components/games/naos.tsx, lib/creations-data.ts, public/games/shots | Games page redesign | 2026-11-15 | docs/site
 - Game launch and exit flow | app/creations/games/layout.tsx, components/game-launch, lib/game-launch, app/camino/game-launch.css | Smooth the game launch and exit flow | 2026-11-16 | docs/site
 - Site motion on home and non-game pages (hover life for toned card art) | app/camino/site-motion.css | Animate homepage and site pages | 2026-11-16 | docs/site
+- Route loading panel and route warm-up | app/system/system-naos.css (`.sys-load` only), components/cm/motion-root.tsx (warm-up effect only), components/game-launch/launch-layer.tsx (cover timings only) | Speed up game loads and page transitions | 2026-11-19 | docs/site
 - Gate, SEO, CI, deploy | proxy.ts, lib/gate, lib/seo.ts, .github, scripts/ci, vercel.json | Unify game check scripts | 2026-11-16 | docs/deploys.md, docs/ci.md
 
 ## Games
